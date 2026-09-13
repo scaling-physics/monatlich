@@ -1,5 +1,6 @@
 package com.monatlich.ui.common
 
+import com.monatlich.domain.model.Money
 import java.math.BigDecimal
 import java.text.NumberFormat
 import java.util.Currency
@@ -10,8 +11,8 @@ import kotlin.math.abs
  * Formats a minor-unit amount (cents / paise) for display using the currency's own locale
  * conventions: `$1,234.56`, `1.234,56 €`, `₹1,23,456.00`.
  *
- * UI-edge helper only. The `Money` value type itself lives in `domain/model` (M2); this function
- * deliberately takes primitives so the UI shell has no dependency on the domain layer.
+ * UI-edge helper only. Prefer [Money.format] when a `Money` is at hand; this primitive overload
+ * serves UI state classes that carry minor units plus a currency code.
  */
 fun formatMinor(amountMinor: Long, currencyCode: String): String {
     if (currencyCode == "INR") return formatIndianRupee(amountMinor)
@@ -25,6 +26,9 @@ fun formatMinor(amountMinor: Long, currencyCode: String): String {
     val major = BigDecimal.valueOf(amountMinor).movePointLeft(digits)
     return format.format(major)
 }
+
+/** Formats this amount with its currency's locale conventions; delegates to [formatMinor]. */
+fun Money.format(): String = formatMinor(amountMinor, currency.code)
 
 /** Locale whose number conventions match the currency. Falls back to the device locale. */
 private fun localeFor(currencyCode: String): Locale = when (currencyCode) {
