@@ -18,3 +18,4 @@ captures/
 .idea/
 *.iml
 .DS_Store
+.claude/worktrees/

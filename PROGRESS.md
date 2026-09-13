@@ -6,8 +6,8 @@ app at that stage of evolution. Screenshots live in `docs/screenshots/m<N>/`.
 | #  | Milestone                          | Status | Tag  | What you can see                                                        |
 |----|------------------------------------|--------|------|-------------------------------------------------------------------------|
 | M0 | Toolchain + project scaffold       | ✅     | m0   | Blank app builds and launches in the emulator                           |
-| M1 | Theme + navigation shell           | ⬜     |      | Maroon theme, 3-tab bottom nav, animated month switcher, placeholders   |
-| M2 | Data layer (Room, models, repos)   | ⬜     |      | No visible change; `./gradlew test` green with full repo coverage       |
+| M1 | Theme + navigation shell           | ✅     | m1   | Maroon theme, 3-tab bottom nav, animated month switcher, placeholders   |
+| M2 | Data layer (Room, models, repos)   | ✅     | m2   | No visible change; `./gradlew test` green with full repo coverage       |
 | M3 | Categories + budgets               | ⬜     |      | Create categories, set budgets, overview shows budget rows              |
 | M4 | Add expense + live overview        | ⬜     |      | FAB → sheet → expense; bars animate; remaining updates                  |
 | M5 | Transactions tab, edit / delete    | ⬜     |      | Full MVP loop closed                                                    |
@@ -34,3 +34,9 @@ Legend: ⬜ not started · 🔄 in progress · ✅ done
   Kotlin 2.3 / Compose BOM 2026.09 / Hilt 2.60 / Room 2.8 scaffold builds, unit + instrumented
   tests pass, app launches on emulator with maroon theme in light and dark.
   Screenshots: `docs/screenshots/m0/`.
+- 2026-09-13 — **M1 + M2 done** (built in parallel by two agents in worktrees, merged same day).
+  M1: nav shell (Overview · Transactions · Settings), month switcher with swipe + shared-axis
+  animation, animated budget bars and count-up totals, FAB → add sheet, reduced-motion support,
+  INR lakh-aware formatter. M2: Room v1 schema (categories, budgets, transactions, exchange_rates),
+  `Money`/`Currency` domain types, repositories, `GetMonthSummary` use case, Hilt modules, seed
+  categories. Merged `main`: 54 unit + 16 instrumented tests green. Screenshots: `docs/screenshots/m1/`.
