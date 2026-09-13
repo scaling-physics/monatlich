@@ -53,8 +53,10 @@ val md_dark_tertiary = Color(0xFFE8C08E)
 val md_dark_onTertiary = Color(0xFF432C06)
 val md_dark_tertiaryContainer = Color(0xFF5D421B)
 val md_dark_onTertiaryContainer = Color(0xFFFFDDB4)
-val md_dark_error = Color(0xFFFFB4AB)
-val md_dark_onError = Color(0xFF690005)
+// Tone 60 rather than the usual tone 80: tone 80 (#FFB4AB) is indistinguishable from the dark
+// primary (#FFB3B4), and over-budget must never read as "brand" (AGENT.md "Theme").
+val md_dark_error = Color(0xFFFF5449)
+val md_dark_onError = Color(0xFF410002)
 val md_dark_errorContainer = Color(0xFF93000A)
 val md_dark_onErrorContainer = Color(0xFFFFDAD6)
 val md_dark_background = Color(0xFF1A1111)
