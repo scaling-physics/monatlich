@@ -5,6 +5,8 @@ import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.consumeWindowInsets
@@ -38,6 +40,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.monatlich.ui.categories.CategoriesRoute
 import com.monatlich.ui.common.LocalMotion
 import com.monatlich.ui.common.Motion
 import com.monatlich.ui.common.MotionTokens
@@ -47,6 +50,9 @@ import com.monatlich.ui.settings.SettingsScreen
 import com.monatlich.ui.transactions.TransactionsScreen
 
 const val NAV_BAR_TAG = "nav_bar"
+
+/** Non-top-level drill-down from Settings: manage categories. Reach via [navigateToCategories]. */
+const val CATEGORIES_ROUTE = "categories"
 
 /**
  * The three top-level destinations. String routes for now; switch to `@Serializable` objects
@@ -157,7 +163,21 @@ private fun MonatlichNavHost(
     ) {
         composable(TopLevelDestination.Overview.route) { OverviewRoute() }
         composable(TopLevelDestination.Transactions.route) { TransactionsScreen() }
-        composable(TopLevelDestination.Settings.route) { SettingsScreen() }
+        composable(TopLevelDestination.Settings.route) {
+            // TODO(integrator): replace with
+            //   SettingsRoute(onManageCategories = { navController.navigateToCategories() })
+            // once agent A's SettingsRoute lands.
+            SettingsScreen()
+        }
+        composable(
+            route = CATEGORIES_ROUTE,
+            enterTransition = { sharedAxisVerticalEnter(motion) },
+            exitTransition = { fadeThroughExit(motion) },
+            popEnterTransition = { fadeThroughEnter(motion) },
+            popExitTransition = { sharedAxisVerticalExit(motion) },
+        ) {
+            CategoriesRoute(onBack = { navController.popBackStack() })
+        }
     }
 }
 
@@ -173,6 +193,31 @@ private fun fadeThroughEnter(motion: Motion): EnterTransition {
 private fun fadeThroughExit(motion: Motion): ExitTransition {
     if (motion.reduceMotion) return ExitTransition.None
     return fadeOut(motion.tween(MotionTokens.FEEDBACK_MS / 2, easing = MotionTokens.Outgoing))
+}
+
+/**
+ * Material shared-axis (vertical) for drill-downs: the incoming screen slides up a little while
+ * fading in; on pop it slides back down.
+ */
+private fun sharedAxisVerticalEnter(motion: Motion): EnterTransition {
+    if (motion.reduceMotion) return EnterTransition.None
+    val spec = motion.tween<Float>(MotionTokens.LAYOUT_MS, easing = MotionTokens.Incoming)
+    return slideInVertically(
+        motion.tween(MotionTokens.LAYOUT_MS, easing = MotionTokens.Incoming),
+    ) { fullHeight -> fullHeight / 10 } + fadeIn(spec)
+}
+
+private fun sharedAxisVerticalExit(motion: Motion): ExitTransition {
+    if (motion.reduceMotion) return ExitTransition.None
+    return slideOutVertically(
+        motion.tween(MotionTokens.LAYOUT_MS, easing = MotionTokens.Outgoing),
+    ) { fullHeight -> fullHeight / 10 } +
+        fadeOut(motion.tween(MotionTokens.EMPHASIS_MS, easing = MotionTokens.Outgoing))
+}
+
+/** Pushes the category manager on top of the current tab. */
+fun NavHostController.navigateToCategories() {
+    navigate(CATEGORIES_ROUTE) { launchSingleTop = true }
 }
 
 private fun NavHostController.navigateToTopLevel(destination: TopLevelDestination) {

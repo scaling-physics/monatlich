@@ -1,3 +1,25 @@
 <resources>
     <string name="app_name">monatlich</string>
+
+    <!-- Categories (M3-B) -->
+    <string name="categories_title">Categories</string>
+    <string name="categories_back">Back</string>
+    <string name="categories_new">New category</string>
+    <string name="categories_edit">Edit category</string>
+    <string name="categories_empty">No categories yet. Tap + to add one.</string>
+    <string name="categories_drag_handle">Drag to reorder</string>
+    <string name="categories_archive">Archive</string>
+    <string name="categories_restore">Restore</string>
+    <string name="categories_archived_section">Archived</string>
+    <plurals name="categories_archived_count">
+        <item quantity="one">%1$d archived</item>
+        <item quantity="other">%1$d archived</item>
+    </plurals>
+    <string name="categories_name_label">Name</string>
+    <string name="categories_icon_label">Icon</string>
+    <string name="categories_color_label">Color</string>
+    <string name="categories_save">Save</string>
+    <string name="categories_cancel">Cancel</string>
+    <string name="categories_error_blank">Enter a name</string>
+    <string name="categories_error_duplicate">A category with this name already exists</string>
 </resources>
