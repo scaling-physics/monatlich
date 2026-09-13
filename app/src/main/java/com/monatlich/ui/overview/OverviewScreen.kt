@@ -13,10 +13,12 @@ import androidx.compose.animation.scaleOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.draggable
 import androidx.compose.foundation.gestures.rememberDraggableState
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -26,9 +28,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -55,6 +59,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
@@ -68,12 +73,16 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.monatlich.domain.model.Currency
+import com.monatlich.domain.model.Money
 import com.monatlich.ui.common.BudgetBar
 import com.monatlich.ui.common.LocalMotion
 import com.monatlich.ui.common.Motion
 import com.monatlich.ui.common.MotionTokens
 import com.monatlich.ui.common.animateMinorAmountAsState
-import com.monatlich.ui.common.formatMinor
+import com.monatlich.ui.common.categoryIcon
+import com.monatlich.ui.common.categoryTint
+import com.monatlich.ui.common.format
 import com.monatlich.ui.theme.AmountTextStyle
 import com.monatlich.ui.theme.MonatlichTheme
 import com.monatlich.ui.theme.MonatlichThemeTokens
@@ -88,11 +97,26 @@ const val ADD_EXPENSE_FAB_TAG = "add_expense_fab"
 const val ADD_EXPENSE_SHEET_TAG = "add_expense_sheet"
 const val MONTH_LABEL_TAG = "month_label"
 
-/** Hilt entry point for the Overview destination. */
+/**
+ * Hilt entry point for the Overview destination.
+ *
+ * [categorySheet] renders the set-budget sheet for a tapped category and [copyBudgetsPrompt] the
+ * "copy last month's budgets?" prompt; both default to nothing so the screen works before they are
+ * wired in. Each receives an `onDismiss` that the caller must invoke to clear the state.
+ */
 @Composable
-fun OverviewRoute(viewModel: OverviewViewModel = hiltViewModel()) {
+fun OverviewRoute(
+    viewModel: OverviewViewModel = hiltViewModel(),
+    categorySheet: @Composable (categoryId: Long, month: YearMonth, onDismiss: () -> Unit) -> Unit = { _, _, _ -> },
+    copyBudgetsPrompt: @Composable (month: YearMonth, onDismiss: () -> Unit) -> Unit = { _, _ -> },
+) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
-    OverviewScreen(state = state, onEvent = viewModel::onEvent)
+    OverviewScreen(
+        state = state,
+        onEvent = viewModel::onEvent,
+        categorySheet = categorySheet,
+        copyBudgetsPrompt = copyBudgetsPrompt,
+    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -101,6 +125,8 @@ fun OverviewScreen(
     state: OverviewUiState,
     onEvent: (OverviewEvent) -> Unit,
     modifier: Modifier = Modifier,
+    categorySheet: @Composable (categoryId: Long, month: YearMonth, onDismiss: () -> Unit) -> Unit = { _, _, _ -> },
+    copyBudgetsPrompt: @Composable (month: YearMonth, onDismiss: () -> Unit) -> Unit = { _, _ -> },
 ) {
     Scaffold(
         modifier = modifier.testTag(OVERVIEW_SCREEN_TAG),
@@ -130,11 +156,18 @@ fun OverviewScreen(
             contentPadding = innerPadding,
             onPrevious = { onEvent(OverviewEvent.PreviousMonth) },
             onNext = { onEvent(OverviewEvent.NextMonth) },
+            onCategoryClick = { onEvent(OverviewEvent.CategoryClicked(it)) },
         )
     }
 
     if (state.isAddSheetVisible) {
         AddExpenseSheet(onDismiss = { onEvent(OverviewEvent.AddSheetDismissed) })
+    }
+    state.selectedCategoryId?.let { categoryId ->
+        categorySheet(categoryId, state.month) { onEvent(OverviewEvent.CategorySheetDismissed) }
+    }
+    if (state.showCopyPrompt) {
+        copyBudgetsPrompt(state.month) { onEvent(OverviewEvent.CopyPromptDismissed) }
     }
 }
 
@@ -222,6 +255,7 @@ private fun MonthContent(
     contentPadding: PaddingValues,
     onPrevious: () -> Unit,
     onNext: () -> Unit,
+    onCategoryClick: (Long) -> Unit,
 ) {
     val motion = LocalMotion.current
     AnimatedContent(
@@ -257,16 +291,25 @@ private fun MonthContent(
                         .animateItem(),
                 )
             }
-            items(shown.categories, key = { it.id }) { row ->
-                CategoryRow(
-                    row = row,
-                    currencyCode = shown.currencyCode,
-                    modifier = Modifier.animateItem(),
-                )
+            if (shown.isLoading) {
+                items(SKELETON_ROWS, key = { "skeleton-$it" }) {
+                    SkeletonRow(modifier = Modifier.animateItem())
+                }
+            } else {
+                items(shown.categories, key = { it.id }) { row ->
+                    CategoryRow(
+                        row = row,
+                        currencyCode = shown.currencyCode,
+                        onClick = { onCategoryClick(row.id) },
+                        modifier = Modifier.animateItem(),
+                    )
+                }
             }
         }
     }
 }
+
+private const val SKELETON_ROWS = 5
 
 /**
  * Horizontal swipe between months. Content follows the finger with a damped translation and
@@ -312,6 +355,7 @@ private fun Modifier.monthSwipe(onPrevious: () -> Unit, onNext: () -> Unit): Mod
 @Composable
 private fun TotalCard(state: OverviewUiState, modifier: Modifier = Modifier) {
     val budgetColors = MonatlichThemeTokens.budgetColors
+    val currency = rememberCurrency(state.currencyCode)
     val animatedSpent by animateMinorAmountAsState(state.totalSpentMinor)
     val animatedRemaining by animateMinorAmountAsState(abs(state.totalRemainingMinor))
     val statusColor = if (state.isOverBudget) MaterialTheme.colorScheme.error else budgetColors.onTrack
@@ -329,12 +373,16 @@ private fun TotalCard(state: OverviewUiState, modifier: Modifier = Modifier) {
                 style = MaterialTheme.typography.labelLarge,
             )
             Text(
-                text = formatMinor(animatedSpent, state.currencyCode),
+                text = Money(animatedSpent, currency).format(),
                 style = AmountTextStyle.copy(fontSize = 36.sp, fontWeight = FontWeight.Bold),
                 modifier = Modifier.padding(top = 4.dp),
             )
             Text(
-                text = "of ${formatMinor(state.totalBudgetMinor, state.currencyCode)} budget",
+                text = when {
+                    state.isLoading -> "Loading budgets…"
+                    state.hasAnyBudget -> "of ${Money(state.totalBudgetMinor, currency).format()} budget"
+                    else -> "No budgets set for this month"
+                },
                 style = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier.padding(top = 2.dp),
             )
@@ -347,13 +395,14 @@ private fun TotalCard(state: OverviewUiState, modifier: Modifier = Modifier) {
             )
             Spacer(Modifier.height(10.dp))
             Text(
-                text = if (state.isOverBudget) {
-                    "${formatMinor(animatedRemaining, state.currencyCode)} over budget"
-                } else {
-                    "${formatMinor(animatedRemaining, state.currencyCode)} remaining"
+                text = when {
+                    state.isLoading -> " "
+                    !state.hasAnyBudget -> "Tap a category to set its budget"
+                    state.isOverBudget -> "${Money(animatedRemaining, currency).format()} over budget"
+                    else -> "${Money(animatedRemaining, currency).format()} remaining"
                 },
                 style = AmountTextStyle.copy(fontSize = 14.sp),
-                color = statusColor,
+                color = if (state.hasAnyBudget) statusColor else MaterialTheme.colorScheme.onPrimaryContainer,
             )
         }
     }
@@ -363,20 +412,22 @@ private fun TotalCard(state: OverviewUiState, modifier: Modifier = Modifier) {
 private fun CategoryRow(
     row: CategoryRowUiState,
     currencyCode: String,
+    onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val budgetColors = MonatlichThemeTokens.budgetColors
+    val currency = rememberCurrency(currencyCode)
     val remainingColor = if (row.isOverBudget) MaterialTheme.colorScheme.error else budgetColors.onTrack
     val barColor = if (row.isOverBudget) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
-    val spent = formatMinor(row.spentMinor, currencyCode)
-    val budget = formatMinor(row.budgetMinor, currencyCode)
-    val remaining = formatMinor(abs(row.remainingMinor), currencyCode)
+    val spent = Money(row.spentMinor, currency).format()
+    val budget = Money(row.budgetMinor, currency).format()
+    val remaining = Money(abs(row.remainingMinor), currency).format()
+    val description = if (row.hasBudget) "${row.name}: $spent of $budget spent" else "${row.name}: no budget set, $spent spent"
     Surface(
+        onClick = onClick,
         modifier = modifier
             .fillMaxWidth()
-            .semantics(mergeDescendants = true) {
-                contentDescription = "${row.name}: $spent of $budget spent"
-            },
+            .semantics(mergeDescendants = true) { contentDescription = description },
         shape = RoundedCornerShape(16.dp),
         color = MaterialTheme.colorScheme.surfaceContainerLow,
     ) {
@@ -385,22 +436,45 @@ private fun CategoryRow(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.fillMaxWidth(),
             ) {
+                CategoryBadge(icon = row.icon, color = row.color)
+                Spacer(Modifier.width(12.dp))
                 Text(
                     text = row.name,
                     style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier.weight(1f),
                 )
-                Text(
-                    text = if (row.isOverBudget) "-$remaining" else remaining,
-                    style = AmountTextStyle,
-                    color = remainingColor,
-                )
+                if (row.hasBudget) {
+                    Text(
+                        text = if (row.isOverBudget) "-$remaining" else remaining,
+                        style = AmountTextStyle,
+                        color = remainingColor,
+                    )
+                } else {
+                    Text(
+                        text = "Set budget",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                }
             }
             Spacer(Modifier.height(10.dp))
-            BudgetBar(progress = row.progress, color = barColor)
+            if (row.hasBudget) {
+                BudgetBar(progress = row.progress, color = barColor)
+            } else {
+                // "No budget set": an empty, muted track so the row keeps the same rhythm.
+                BudgetBar(
+                    progress = 0f,
+                    color = barColor,
+                    trackColor = MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.6f),
+                )
+            }
             Spacer(Modifier.height(8.dp))
             Text(
-                text = "$spent / $budget",
+                text = when {
+                    row.hasBudget -> "$spent / $budget"
+                    row.spentMinor != 0L -> "$spent spent · no budget"
+                    else -> "No budget set"
+                },
                 style = AmountTextStyle.copy(
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Normal,
@@ -410,6 +484,52 @@ private fun CategoryRow(
         }
     }
 }
+
+/** Tinted circle with the category's icon. */
+@Composable
+private fun CategoryBadge(icon: String, color: Long) {
+    val tint = categoryTint(color)
+    Box(
+        modifier = Modifier
+            .size(36.dp)
+            .clip(CircleShape)
+            .background(tint.copy(alpha = 0.16f)),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            imageVector = categoryIcon(icon),
+            contentDescription = null,
+            tint = tint,
+            modifier = Modifier.size(20.dp),
+        )
+    }
+}
+
+/** Static stand-in for a category row while the first summary loads. */
+@Composable
+private fun SkeletonRow(modifier: Modifier = Modifier) {
+    val bone = MaterialTheme.colorScheme.surfaceContainerHighest
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        color = MaterialTheme.colorScheme.surfaceContainerLow,
+    ) {
+        Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(Modifier.size(36.dp).clip(CircleShape).background(bone))
+                Spacer(Modifier.width(12.dp))
+                Box(Modifier.width(120.dp).height(16.dp).clip(RoundedCornerShape(4.dp)).background(bone))
+            }
+            Spacer(Modifier.height(10.dp))
+            Box(Modifier.fillMaxWidth().height(8.dp).clip(RoundedCornerShape(percent = 50)).background(bone))
+            Spacer(Modifier.height(8.dp))
+            Box(Modifier.width(88.dp).height(12.dp).clip(RoundedCornerShape(4.dp)).background(bone))
+        }
+    }
+}
+
+@Composable
+private fun rememberCurrency(code: String): Currency = remember(code) { Currency.fromCode(code) }
 
 // --- Add-expense sheet (placeholder until M4) --------------------------------------------------
 
@@ -458,9 +578,10 @@ private fun OverviewScreenPreview() {
                 totalSpentMinor = 132_500,
                 totalBudgetMinor = 199_000,
                 categories = listOf(
-                    CategoryRowUiState(1, "Groceries", 31_250, 45_000),
-                    CategoryRowUiState(2, "Rent", 120_000, 120_000),
-                    CategoryRowUiState(3, "Transport", 10_400, 9_000),
+                    CategoryRowUiState(1, "Groceries", "ShoppingCart", 0xFF2E7D32, 31_250, 45_000, hasBudget = true),
+                    CategoryRowUiState(2, "Rent", "Home", 0xFF6B1F2A, 120_000, 120_000, hasBudget = true),
+                    CategoryRowUiState(3, "Transport", "DirectionsBus", 0xFF1565C0, 10_400, 9_000, hasBudget = true),
+                    CategoryRowUiState(4, "Fun", "Celebration", 0xFF7B1FA2, 0, 0, hasBudget = false),
                 ),
             ),
             onEvent = {},

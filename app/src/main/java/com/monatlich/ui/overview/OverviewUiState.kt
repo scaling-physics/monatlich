@@ -6,8 +6,9 @@ import java.time.YearMonth
 /**
  * Single immutable UI state for the Overview (home) screen.
  *
- * Amounts are minor units in [currencyCode] (the base currency). M3 replaces the placeholder
- * [categories] with rows derived from the repository; the shape is meant to survive that swap.
+ * Amounts are minor units in [currencyCode] (the base currency). [categories] are derived from
+ * `GetMonthSummary`; [isLoading] is `true` only until the first summary arrives. A month switch
+ * emits a new state only once that month's data is in, so [month] and [categories] always agree.
  */
 @Immutable
 data class OverviewUiState(
@@ -17,23 +18,35 @@ data class OverviewUiState(
     val totalSpentMinor: Long,
     val totalBudgetMinor: Long,
     val categories: List<CategoryRowUiState>,
+    val isLoading: Boolean = false,
     val isAddSheetVisible: Boolean = false,
+    /** Category whose budget sheet is open, or `null` when no sheet is shown. */
+    val selectedCategoryId: Long? = null,
+    /** `true` when this month has no budgets but the previous month has at least one. */
+    val showCopyPrompt: Boolean = false,
 ) {
     val totalRemainingMinor: Long get() = totalBudgetMinor - totalSpentMinor
     val totalProgress: Float get() = progressOf(totalSpentMinor, totalBudgetMinor)
     val isOverBudget: Boolean get() = totalSpentMinor > totalBudgetMinor
+    val hasAnyBudget: Boolean get() = categories.any { it.hasBudget }
 }
 
 @Immutable
 data class CategoryRowUiState(
     val id: Long,
     val name: String,
+    /** Material Icons name; resolve with `categoryIcon()`. */
+    val icon: String,
+    /** ARGB colour; resolve with `categoryColor()`. */
+    val color: Long,
     val spentMinor: Long,
+    /** Budget in the base currency; `0` when [hasBudget] is `false`. */
     val budgetMinor: Long,
+    val hasBudget: Boolean,
 ) {
     val remainingMinor: Long get() = budgetMinor - spentMinor
-    val progress: Float get() = progressOf(spentMinor, budgetMinor)
-    val isOverBudget: Boolean get() = spentMinor > budgetMinor
+    val progress: Float get() = if (hasBudget) progressOf(spentMinor, budgetMinor) else 0f
+    val isOverBudget: Boolean get() = hasBudget && spentMinor > budgetMinor
 }
 
 sealed interface OverviewEvent {
@@ -42,6 +55,9 @@ sealed interface OverviewEvent {
     data object JumpToCurrentMonth : OverviewEvent
     data object AddExpenseClicked : OverviewEvent
     data object AddSheetDismissed : OverviewEvent
+    data class CategoryClicked(val categoryId: Long) : OverviewEvent
+    data object CategorySheetDismissed : OverviewEvent
+    data object CopyPromptDismissed : OverviewEvent
 }
 
 private fun progressOf(spent: Long, budget: Long): Float = when {

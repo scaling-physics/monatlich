@@ -1,5 +1,7 @@
 package com.monatlich.ui.common
 
+import com.monatlich.domain.model.Currency
+import com.monatlich.domain.model.Money
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
@@ -29,5 +31,13 @@ class MoneyFormatTest {
     fun zeroAndNegative() {
         assertEquals("$0.00", formatMinor(0, "USD"))
         assertEquals("-$5.00", formatMinor(-500, "USD"))
+    }
+
+    @Test
+    fun moneyExtensionDelegatesToFormatMinor() {
+        assertEquals("$1,234.56", Money(123_456, Currency.USD).format())
+        assertEquals("1.234,56 €", Money(123_456, Currency.EUR).format().normalizeSpaces())
+        assertEquals("₹1,23,456.00", Money(12_345_600, Currency.INR).format())
+        assertEquals("-₹1,000.50", Money(-100_050, Currency.INR).format())
     }
 }
