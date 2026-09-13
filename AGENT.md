@@ -115,8 +115,8 @@ place. Information architecture is fixed now (expensive to change later); visual
 | Persistence     | Room (SQLite), offline only                         |
 | Async           | Kotlin coroutines + Flow                            |
 | Navigation      | Navigation Compose                                  |
-| Build           | Gradle Kotlin DSL, version catalog (`gradle/libs.versions.toml`) |
-| Min SDK         | 26 (Android 8.0)                                    |
+| Build           | Gradle 9.7 Kotlin DSL, AGP 9.4 (built-in Kotlin — no separate `kotlin-android` plugin), version catalog (`gradle/libs.versions.toml`) |
+| SDK             | minSdk 26 · targetSdk 37 · compileSdk 37             |
 | Testing         | JUnit + Turbine for ViewModels/repos; Room in-memory tests; Compose UI tests for key screens |
 
 ## Project layout (target)
@@ -156,6 +156,15 @@ app/src/main/java/com/monatlich/
 - Prefer small, focused commits. Commit messages: imperative mood, first line ≤ 72 chars.
 
 ## Working in this repo
+
+Toolchain on this machine (set up 2026-09-13):
+- Android SDK at `~/Library/Android/sdk` (`local.properties` points there; not committed).
+- Gradle runs on JDK 17 from `/opt/homebrew/opt/openjdk@17/...` via `org.gradle.java.home` in
+  `~/.gradle/gradle.properties`. Android Studio's bundled JDK 25 also works with Gradle 9.
+- Emulator AVD `monatlich_pixel` (Pixel 8, API 36, arm64). Start:
+  `~/Library/Android/sdk/emulator/emulator -avd monatlich_pixel &`
+- Screenshots: `adb exec-out screencap -p > docs/screenshots/m<N>/<name>.png`;
+  toggle dark mode with `adb shell cmd uimode night yes|no`.
 
 - Build: `./gradlew assembleDebug`
 - Unit tests: `./gradlew testDebugUnitTest`

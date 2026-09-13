@@ -5,7 +5,7 @@ app at that stage of evolution. Screenshots live in `docs/screenshots/m<N>/`.
 
 | #  | Milestone                          | Status | Tag  | What you can see                                                        |
 |----|------------------------------------|--------|------|-------------------------------------------------------------------------|
-| M0 | Toolchain + project scaffold       | 🔄     |      | Blank app builds and launches in the emulator                           |
+| M0 | Toolchain + project scaffold       | ✅     | m0   | Blank app builds and launches in the emulator                           |
 | M1 | Theme + navigation shell           | ⬜     |      | Maroon theme, 3-tab bottom nav, animated month switcher, placeholders   |
 | M2 | Data layer (Room, models, repos)   | ⬜     |      | No visible change; `./gradlew test` green with full repo coverage       |
 | M3 | Categories + budgets               | ⬜     |      | Create categories, set budgets, overview shows budget rows              |
@@ -29,4 +29,8 @@ Legend: ⬜ not started · 🔄 in progress · ✅ done
 
 ## Log
 
-- 2026-09-13 — Project brief written (`AGENT.md`). Toolchain install started (Android Studio via Homebrew).
+- 2026-09-13 — Project brief written (`AGENT.md`).
+- 2026-09-13 — **M0 done.** Android Studio + SDK 36/37 + JDK 17 installed; Gradle 9.7 / AGP 9.4 /
+  Kotlin 2.3 / Compose BOM 2026.09 / Hilt 2.60 / Room 2.8 scaffold builds, unit + instrumented
+  tests pass, app launches on emulator with maroon theme in light and dark.
+  Screenshots: `docs/screenshots/m0/`.
