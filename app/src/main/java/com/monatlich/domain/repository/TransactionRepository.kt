@@ -1,0 +1,37 @@
+package com.monatlich.domain.repository
+
+import com.monatlich.domain.model.Currency
+import com.monatlich.domain.model.Money
+import com.monatlich.domain.model.Transaction
+import com.monatlich.domain.model.TransactionType
+import kotlinx.coroutines.flow.Flow
+import java.time.YearMonth
+
+interface TransactionRepository {
+    /** All transactions in [month], newest first. */
+    fun observeForMonth(month: YearMonth): Flow<List<Transaction>>
+
+    /** Transactions of one category in [month], newest first. */
+    fun observeForCategory(categoryId: Long, month: YearMonth): Flow<List<Transaction>>
+
+    fun observe(id: Long): Flow<Transaction?>
+
+    suspend fun get(id: Long): Transaction?
+
+    /** Inserts [transaction] (its [Transaction.id] is ignored); returns the new id. */
+    suspend fun add(transaction: Transaction): Long
+
+    suspend fun update(transaction: Transaction)
+
+    suspend fun delete(id: Long)
+
+    /**
+     * Per-category totals of all [type] transactions in [month], converted to [base] with each
+     * transaction's stored [Transaction.rateToBase]. Categories without transactions are absent.
+     */
+    fun observeTotalsByCategoryInBase(
+        month: YearMonth,
+        type: TransactionType,
+        base: Currency,
+    ): Flow<Map<Long, Money>>
+}
