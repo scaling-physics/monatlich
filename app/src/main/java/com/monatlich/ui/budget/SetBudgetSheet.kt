@@ -66,6 +66,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.monatlich.domain.model.Currency
 import com.monatlich.domain.model.Money
 import com.monatlich.ui.common.LocalMotion
+import com.monatlich.ui.common.CategoryBadge
 import com.monatlich.ui.common.formatMinor
 import com.monatlich.ui.theme.AmountFontFeatures
 import com.monatlich.ui.theme.MonatlichTheme
@@ -137,6 +138,7 @@ private fun SetBudgetSheetContent(
     ) {
         CategoryHeader(
             name = state.categoryName,
+            icon = state.categoryIcon,
             color = state.categoryColor,
             month = state.month,
         )
@@ -185,21 +187,9 @@ private fun SetBudgetSheetContent(
 }
 
 @Composable
-private fun CategoryHeader(name: String, color: Long, month: YearMonth) {
+private fun CategoryHeader(name: String, icon: String, color: Long, month: YearMonth) {
     Row(verticalAlignment = Alignment.CenterVertically) {
-        val circle = if (color == 0L) MaterialTheme.colorScheme.surfaceVariant else Color(color)
-        Box(
-            modifier = Modifier
-                .size(40.dp)
-                .background(circle, CircleShape),
-            contentAlignment = Alignment.Center,
-        ) {
-            Text(
-                text = name.take(1).uppercase(),
-                style = MaterialTheme.typography.titleMedium,
-                color = Color.White,
-            )
-        }
+        CategoryBadge(icon = icon, color = color, size = 40.dp)
         Spacer(Modifier.width(12.dp))
         Column {
             Text(

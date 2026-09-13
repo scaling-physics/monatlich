@@ -80,7 +80,7 @@ import com.monatlich.ui.common.LocalMotion
 import com.monatlich.ui.common.Motion
 import com.monatlich.ui.common.MotionTokens
 import com.monatlich.ui.common.animateMinorAmountAsState
-import com.monatlich.ui.common.categoryIcon
+import com.monatlich.ui.common.CategoryBadge
 import com.monatlich.ui.common.categoryTint
 import com.monatlich.ui.common.format
 import com.monatlich.ui.theme.AmountTextStyle
@@ -482,26 +482,6 @@ private fun CategoryRow(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
-    }
-}
-
-/** Tinted circle with the category's icon. */
-@Composable
-private fun CategoryBadge(icon: String, color: Long) {
-    val tint = categoryTint(color)
-    Box(
-        modifier = Modifier
-            .size(36.dp)
-            .clip(CircleShape)
-            .background(tint.copy(alpha = 0.16f)),
-        contentAlignment = Alignment.Center,
-    ) {
-        Icon(
-            imageVector = categoryIcon(icon),
-            contentDescription = null,
-            tint = tint,
-            modifier = Modifier.size(20.dp),
-        )
     }
 }
 

@@ -17,6 +17,7 @@ import androidx.compose.material.icons.outlined.Favorite
 import androidx.compose.material.icons.outlined.FitnessCenter
 import androidx.compose.material.icons.outlined.Flight
 import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.Luggage
 import androidx.compose.material.icons.outlined.LocalGasStation
 import androidx.compose.material.icons.outlined.LocalHospital
 import androidx.compose.material.icons.outlined.Movie
@@ -25,6 +26,7 @@ import androidx.compose.material.icons.outlined.MusicNote
 import androidx.compose.material.icons.outlined.Paid
 import androidx.compose.material.icons.outlined.Pets
 import androidx.compose.material.icons.outlined.Phone
+import androidx.compose.material.icons.outlined.Receipt
 import androidx.compose.material.icons.outlined.Restaurant
 import androidx.compose.material.icons.outlined.Savings
 import androidx.compose.material.icons.outlined.School
@@ -70,7 +72,11 @@ fun categoryTint(argb: Long): Color {
 private const val MIN_DARK_LUMINANCE = 0.25f
 private const val MAX_LIFT = 0.55f
 
-val categoryIconNames: List<String> get() = CATEGORY_ICONS.keys.toList()
+/** Name of the fallback glyph; also the editor default. */
+const val DEFAULT_CATEGORY_ICON = "Category"
+
+/** Pick list for the category editor: every icon except the generic fallback. */
+val categoryIconNames: List<String> get() = CATEGORY_ICONS.keys.filter { it != DEFAULT_CATEGORY_ICON }
 
 private val CATEGORY_ICONS: Map<String, ImageVector> = linkedMapOf(
     "ShoppingCart" to Icons.Outlined.ShoppingCart,
@@ -85,6 +91,7 @@ private val CATEGORY_ICONS: Map<String, ImageVector> = linkedMapOf(
     "DirectionsCar" to Icons.Outlined.DirectionsCar,
     "Train" to Icons.Outlined.Train,
     "Flight" to Icons.Outlined.Flight,
+    "Luggage" to Icons.Outlined.Luggage,
     "LocalGasStation" to Icons.Outlined.LocalGasStation,
     "LocalHospital" to Icons.Outlined.LocalHospital,
     "FitnessCenter" to Icons.Outlined.FitnessCenter,
@@ -107,5 +114,6 @@ private val CATEGORY_ICONS: Map<String, ImageVector> = linkedMapOf(
     "Savings" to Icons.Outlined.Savings,
     "Paid" to Icons.Outlined.Paid,
     "CreditCard" to Icons.Outlined.CreditCard,
+    "Receipt" to Icons.Outlined.Receipt,
     "Category" to Icons.Outlined.Category,
 )

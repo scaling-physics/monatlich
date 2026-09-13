@@ -78,6 +78,8 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
@@ -95,6 +97,8 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.monatlich.R
 import com.monatlich.domain.model.Category
+import com.monatlich.ui.common.CategoryBadge
+import com.monatlich.ui.common.categoryIcon
 import com.monatlich.ui.common.LocalMotion
 import com.monatlich.ui.common.Motion
 import com.monatlich.ui.theme.MonatlichTheme
@@ -484,34 +488,6 @@ private fun ArchivedCategoryRow(
     }
 }
 
-/** Category icon inside a filled circle of its colour. Shared look for list rows and the sheet. */
-@Composable
-fun CategoryBadge(
-    icon: String,
-    color: Long,
-    modifier: Modifier = Modifier,
-    muted: Boolean = false,
-    size: Dp = 40.dp,
-) {
-    val motion = LocalMotion.current
-    val target = Color(color).let { if (muted) it.copy(alpha = 0.45f) else it }
-    val background by animateColorAsState(target, motion.layout(), label = "badgeColor")
-    Box(
-        contentAlignment = Alignment.Center,
-        modifier = modifier
-            .size(size)
-            .clip(CircleShape)
-            .background(background),
-    ) {
-        Icon(
-            imageVector = categoryIcon(icon),
-            contentDescription = null,
-            tint = Color.White,
-            modifier = Modifier.size(size * 0.55f),
-        )
-    }
-}
-
 // --- Editor sheet --------------------------------------------------------------------------------
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -545,6 +521,11 @@ private fun CategoryEditorSheet(
             }
             Spacer(Modifier.height(20.dp))
 
+            val nameFocus = remember { FocusRequester() }
+            LaunchedEffect(Unit) {
+                nameFocus.requestFocus()
+                keyboard?.show()
+            }
             OutlinedTextField(
                 value = editor.name,
                 onValueChange = { onEvent(CategoriesEvent.NameChanged(it)) },
@@ -573,6 +554,7 @@ private fun CategoryEditorSheet(
                 }),
                 modifier = Modifier
                     .fillMaxWidth()
+                    .focusRequester(nameFocus)
                     .testTag(CATEGORY_NAME_FIELD_TAG),
             )
             Spacer(Modifier.height(20.dp))

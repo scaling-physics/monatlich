@@ -45,8 +45,10 @@ import com.monatlich.ui.common.LocalMotion
 import com.monatlich.ui.common.Motion
 import com.monatlich.ui.common.MotionTokens
 import com.monatlich.ui.common.rememberMotion
+import com.monatlich.ui.budget.CopyBudgetsPrompt
+import com.monatlich.ui.budget.SetBudgetSheet
 import com.monatlich.ui.overview.OverviewRoute
-import com.monatlich.ui.settings.SettingsScreen
+import com.monatlich.ui.settings.SettingsRoute
 import com.monatlich.ui.transactions.TransactionsScreen
 
 const val NAV_BAR_TAG = "nav_bar"
@@ -161,13 +163,15 @@ private fun MonatlichNavHost(
         popEnterTransition = { fadeThroughEnter(motion) },
         popExitTransition = { fadeThroughExit(motion) },
     ) {
-        composable(TopLevelDestination.Overview.route) { OverviewRoute() }
+        composable(TopLevelDestination.Overview.route) {
+            OverviewRoute(
+                categorySheet = { id, month, dismiss -> SetBudgetSheet(id, month, dismiss) },
+                copyBudgetsPrompt = { month, dismiss -> CopyBudgetsPrompt(month, dismiss) },
+            )
+        }
         composable(TopLevelDestination.Transactions.route) { TransactionsScreen() }
         composable(TopLevelDestination.Settings.route) {
-            // TODO(integrator): replace with
-            //   SettingsRoute(onManageCategories = { navController.navigateToCategories() })
-            // once agent A's SettingsRoute lands.
-            SettingsScreen()
+            SettingsRoute(onManageCategories = { navController.navigateToCategories() })
         }
         composable(
             route = CATEGORIES_ROUTE,

@@ -28,16 +28,16 @@ Personal tool first; structure kept clean enough for a future Play Store release
 ### Feature roadmap
 
 **MVP — usable day to day**
-- [ ] Month navigation (prev / next / jump to current)
-- [ ] Categories: create, rename, reorder, archive; icon + color
-- [ ] Set budget amount per category per month
+- [x] Month navigation (prev / next / jump to current)
+- [x] Categories: create, rename, reorder, archive; icon + color
+- [x] Set budget amount per category per month
 - [ ] Add expense: amount, category, date (defaults to today), note. Entry must be *fast*.
 - [ ] Month overview: per-category spent/budget/remaining, total spent vs. total budget
 - [ ] Transaction list per month and per category; edit / delete
 - [ ] Currencies: base-currency setting, per-transaction currency (USD / EUR / INR), rate table
 
 **v1 — makes it stick**
-- [ ] Copy last month's budgets into a new month (prompt when opening an empty month)
+- [x] Copy last month's budgets into a new month (prompt when opening an empty month)
 - [ ] Income transactions → month shows net (income − expenses)
 - [ ] Recurring transactions (rent, subscriptions) auto-created each month
 - [ ] Search / filter transactions

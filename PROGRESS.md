@@ -8,11 +8,11 @@ app at that stage of evolution. Screenshots live in `docs/screenshots/m<N>/`.
 | M0 | Toolchain + project scaffold       | ✅     | m0   | Blank app builds and launches in the emulator                           |
 | M1 | Theme + navigation shell           | ✅     | m1   | Maroon theme, 3-tab bottom nav, animated month switcher, placeholders   |
 | M2 | Data layer (Room, models, repos)   | ✅     | m2   | No visible change; `./gradlew test` green with full repo coverage       |
-| M3 | Categories + budgets               | ⬜     |      | Create categories, set budgets, overview shows budget rows              |
+| M3 | Categories + budgets               | ✅     | m3   | Create categories, set budgets, overview shows budget rows              |
 | M4 | Add expense + live overview        | ⬜     |      | FAB → sheet → expense; bars animate; remaining updates                  |
 | M5 | Transactions tab, edit / delete    | ⬜     |      | Full MVP loop closed                                                    |
 | M6 | Currencies                         | ⬜     |      | Base currency, per-transaction USD / EUR / INR, rate table              |
-| M7 | Copy budgets + income              | ⬜     |      | New month prompts to copy; month shows net                              |
+| M7 | Income                             | ⬜     |      | Month shows net (copy-budgets prompt shipped early in M3)                |
 | M8 | Recurring transactions             | ⬜     |      | Rent / subscriptions auto-appear each month                             |
 | M9 | Search / filter, CSV export, backup| ⬜     |      | v1 complete                                                             |
 
@@ -40,3 +40,10 @@ Legend: ⬜ not started · 🔄 in progress · ✅ done
   INR lakh-aware formatter. M2: Room v1 schema (categories, budgets, transactions, exchange_rates),
   `Money`/`Currency` domain types, repositories, `GetMonthSummary` use case, Hilt modules, seed
   categories. Merged `main`: 54 unit + 16 instrumented tests green. Screenshots: `docs/screenshots/m1/`.
+- 2026-09-13 — **M3 done** (three parallel agents: overview-on-real-data + settings, category
+  manager, budget sheet + copy prompt; integrated by hand). Overview now reads Room via
+  `GetMonthSummary`; tap a category → set-budget sheet (calculator-style entry, USD/EUR/INR);
+  new empty month → "copy budgets from last month?"; Settings has base currency, editable rate
+  table, and Manage categories (add/rename/reorder/archive, icon + colour). Integration fixes:
+  merged two duplicate icon/badge helpers into `ui/common`, auto-focus in the category editor,
+  real badge in the budget sheet. 110 unit + 21 instrumented tests green. Screenshots: `docs/screenshots/m3/`.

@@ -91,16 +91,6 @@ fun SettingsRoute(
     )
 }
 
-/**
- * Kept so the M1 nav shell still compiles; the integrator should call [SettingsRoute] instead and
- * delete this overload.
- */
-@Deprecated("Use SettingsRoute(onManageCategories = ...)", ReplaceWith("SettingsRoute(onManageCategories = {})"))
-@Composable
-fun SettingsScreen(modifier: Modifier = Modifier) {
-    SettingsRoute(onManageCategories = {}, modifier = modifier)
-}
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
