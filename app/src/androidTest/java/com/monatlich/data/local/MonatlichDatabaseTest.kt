@@ -23,7 +23,7 @@ import java.time.YearMonth
 
 /**
  * Exercises every DAO against a real (in-memory) SQLite database, including the seed callback,
- * the unique budget index, the RESTRICT foreign keys and the grouped-totals query.
+ * the unique budget index, the RESTRICT / SET NULL foreign keys and the grouped-totals query.
  */
 @RunWith(AndroidJUnit4::class)
 class MonatlichDatabaseTest {
@@ -236,6 +236,99 @@ class MonatlichDatabaseTest {
         }
     }
 
+    @Test
+    fun transactionDao_getForRecurringFiltersByRuleAndMonth() = runBlocking {
+        val dao = db.transactionDao()
+        val categoryId = firstCategoryId()
+        val rule = db.recurringTransactionDao().insert(recurringRule(categoryId))
+        val other = db.recurringTransactionDao().insert(recurringRule(categoryId, day = 2))
+
+        dao.insert(transaction(categoryId, "2026-09-01", 100, "EUR", "1").copy(recurringId = rule))
+        dao.insert(transaction(categoryId, "2026-10-01", 100, "EUR", "1").copy(recurringId = rule))
+        dao.insert(transaction(categoryId, "2026-09-02", 100, "EUR", "1").copy(recurringId = other))
+        dao.insert(transaction(categoryId, "2026-09-03", 100, "EUR", "1")) // manual
+
+        val rows = dao.getForRecurring(rule, september)
+        assertEquals(listOf(LocalDate.of(2026, 9, 1)), rows.map { it.date })
+        assertEquals(rule, rows.single().recurringId)
+        assertTrue(dao.getForRecurring(rule, YearMonth.of(2026, 11)).isEmpty())
+        assertEquals(4, dao.observeForMonth(september).first().size + dao.observeForMonth(september.plusMonths(1)).first().size)
+    }
+
+    @Test
+    fun transactionDao_rejectsUnknownRecurringRule() = runBlocking {
+        try {
+            db.transactionDao().insert(transaction(firstCategoryId(), "2026-09-01", 1, "EUR", "1").copy(recurringId = 9999))
+            fail("Expected FOREIGN KEY constraint violation")
+        } catch (expected: SQLiteConstraintException) {
+            // ok
+        }
+    }
+
+    // ---- recurring transactions --------------------------------------------------------------
+
+    @Test
+    fun recurringDao_insertQueryUpdateSetActiveDelete() = runBlocking {
+        val dao = db.recurringTransactionDao()
+        val categoryId = firstCategoryId()
+
+        val id = dao.insert(recurringRule(categoryId, day = 15, endMonth = YearMonth.of(2027, 8)))
+        val loaded = dao.getById(id)!!
+        assertEquals(15, loaded.dayOfMonth)
+        assertEquals(september, loaded.startMonth)
+        assertEquals(YearMonth.of(2027, 8), loaded.endMonth)
+        assertEquals(TransactionType.EXPENSE, loaded.type)
+        assertTrue(loaded.active)
+        assertEquals(loaded, dao.observeById(id).first())
+
+        dao.update(loaded.copy(amountMinor = 1_499, note = "Streaming", endMonth = null))
+        val updated = dao.getById(id)!!
+        assertEquals(1_499L, updated.amountMinor)
+        assertEquals("Streaming", updated.note)
+        assertNull(updated.endMonth)
+
+        dao.setActive(id, false)
+        assertEquals(false, dao.getById(id)!!.active)
+
+        dao.deleteById(id)
+        assertNull(dao.getById(id))
+        assertNull(dao.observeById(id).first())
+    }
+
+    @Test
+    fun recurringDao_observeAllOrdersByDayThenId() = runBlocking {
+        val dao = db.recurringTransactionDao()
+        val categoryId = firstCategoryId()
+        val late = dao.insert(recurringRule(categoryId, day = 28))
+        val early = dao.insert(recurringRule(categoryId, day = 1))
+        val earlyAgain = dao.insert(recurringRule(categoryId, day = 1))
+
+        assertEquals(listOf(early, earlyAgain, late), dao.observeAll().first().map { it.id })
+    }
+
+    @Test
+    fun recurringDao_deleteNullsRecurringIdOnGeneratedTransactions() = runBlocking {
+        val categoryId = firstCategoryId()
+        val rule = db.recurringTransactionDao().insert(recurringRule(categoryId))
+        val txId = db.transactionDao().insert(transaction(categoryId, "2026-09-01", 100, "EUR", "1").copy(recurringId = rule))
+
+        db.recurringTransactionDao().deleteById(rule)
+
+        val survivor = db.transactionDao().getById(txId)!!
+        assertNull(survivor.recurringId)
+        assertEquals(100L, survivor.amountMinor)
+    }
+
+    @Test
+    fun recurringDao_rejectsUnknownCategory() = runBlocking {
+        try {
+            db.recurringTransactionDao().insert(recurringRule(categoryId = 9999))
+            fail("Expected FOREIGN KEY constraint violation")
+        } catch (expected: SQLiteConstraintException) {
+            // ok
+        }
+    }
+
     // ---- exchange rates ----------------------------------------------------------------------
 
     @Test
@@ -256,6 +349,22 @@ class MonatlichDatabaseTest {
     // ---- helpers -----------------------------------------------------------------------------
 
     private suspend fun firstCategoryId(): Long = db.categoryDao().observeAll().first().first().id
+
+    private fun recurringRule(
+        categoryId: Long,
+        day: Int = 1,
+        endMonth: YearMonth? = null,
+    ) = RecurringTransactionEntity(
+        categoryId = categoryId,
+        amountMinor = 120_000,
+        currencyCode = "EUR",
+        type = TransactionType.EXPENSE,
+        note = null,
+        dayOfMonth = day,
+        startMonth = september,
+        endMonth = endMonth,
+        active = true,
+    )
 
     private fun transaction(
         categoryId: Long,

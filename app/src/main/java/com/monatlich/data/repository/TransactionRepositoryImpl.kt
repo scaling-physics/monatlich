@@ -32,6 +32,9 @@ class TransactionRepositoryImpl @Inject constructor(
 
     override suspend fun delete(id: Long) = dao.deleteById(id)
 
+    override suspend fun getForRecurring(recurringId: Long, month: YearMonth): List<Transaction> =
+        dao.getForRecurring(recurringId, month).map { it.toDomain() }
+
     /**
      * Each DAO row is a (category, currency, rateToBase) group; the group sum is converted with its
      * own rate and rounded half-even to the base minor unit, then groups are summed per category.

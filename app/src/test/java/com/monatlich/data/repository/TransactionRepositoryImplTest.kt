@@ -52,6 +52,9 @@ private class FakeTransactionDao : TransactionDao {
 
     override suspend fun deleteById(id: Long) = rows.update { list -> list.filterNot { it.id == id } }
 
+    override suspend fun getForRecurring(recurringId: Long, month: YearMonth): List<TransactionEntity> =
+        rows.value.filter { it.recurringId == recurringId && it.month == month }.sortedWith(compareBy({ it.date }, { it.id }))
+
     override fun observeTotalsByCategory(month: YearMonth, type: TransactionType): Flow<List<CategoryTotalRow>> =
         rows.map { list ->
             list.filter { it.month == month && it.type == type }

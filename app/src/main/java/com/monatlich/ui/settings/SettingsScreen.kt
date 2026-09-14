@@ -26,6 +26,7 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.outlined.Autorenew
 import androidx.compose.material.icons.outlined.Category
 import androidx.compose.material.icons.outlined.CurrencyExchange
 import androidx.compose.material.icons.outlined.Payments
@@ -52,6 +53,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -60,6 +62,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.monatlich.R
 import com.monatlich.domain.model.Currency
 import com.monatlich.ui.common.LocalMotion
 import com.monatlich.ui.theme.AmountTextStyle
@@ -71,14 +74,19 @@ const val BASE_CURRENCY_ROW_TAG = "settings_base_currency"
 const val BASE_CURRENCY_DIALOG_TAG = "settings_base_currency_dialog"
 const val RATE_INPUT_TAG = "settings_rate_input"
 const val MANAGE_CATEGORIES_TAG = "settings_manage_categories"
+const val MANAGE_RECURRING_TAG = "settings_manage_recurring"
 
 /** Test tag of the exchange-rate row for [code], e.g. `settings_rate_USD`. */
 fun rateRowTag(code: String): String = "settings_rate_$code"
 
-/** Hilt entry point for the Settings destination. [onManageCategories] opens the category editor. */
+/**
+ * Hilt entry point for the Settings destination. [onManageCategories] opens the category editor,
+ * [onManageRecurring] the recurring-transactions manager.
+ */
 @Composable
 fun SettingsRoute(
     onManageCategories: () -> Unit,
+    onManageRecurring: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: SettingsViewModel = hiltViewModel(),
 ) {
@@ -87,6 +95,7 @@ fun SettingsRoute(
         state = state,
         onEvent = viewModel::onEvent,
         onManageCategories = onManageCategories,
+        onManageRecurring = onManageRecurring,
         modifier = modifier,
     )
 }
@@ -97,6 +106,7 @@ fun SettingsScreen(
     state: SettingsUiState,
     onEvent: (SettingsEvent) -> Unit,
     onManageCategories: () -> Unit,
+    onManageRecurring: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Scaffold(
@@ -157,6 +167,17 @@ fun SettingsScreen(
                     subtitle = "Add, rename, reorder or archive",
                     onClick = onManageCategories,
                     modifier = Modifier.testTag(MANAGE_CATEGORIES_TAG),
+                )
+            }
+
+            item(key = "automation-header") { SectionHeader(stringResource(R.string.settings_automation_section)) }
+            item(key = "manage-recurring") {
+                SettingsRow(
+                    icon = { Icon(Icons.Outlined.Autorenew, contentDescription = null) },
+                    title = stringResource(R.string.settings_recurring_title),
+                    subtitle = stringResource(R.string.settings_recurring_subtitle),
+                    onClick = onManageRecurring,
+                    modifier = Modifier.testTag(MANAGE_RECURRING_TAG),
                 )
             }
         }
@@ -417,6 +438,7 @@ private fun SettingsScreenPreview() {
             ),
             onEvent = {},
             onManageCategories = {},
+            onManageRecurring = {},
         )
     }
 }
