@@ -5,11 +5,13 @@ import com.monatlich.domain.model.Category
 import com.monatlich.domain.model.Currency
 import com.monatlich.domain.model.ExchangeRate
 import com.monatlich.domain.model.Money
+import com.monatlich.domain.model.RecurringTransaction
 import com.monatlich.domain.model.Transaction
 import com.monatlich.domain.model.TransactionType
 import com.monatlich.domain.repository.BudgetRepository
 import com.monatlich.domain.repository.CategoryRepository
 import com.monatlich.domain.repository.ExchangeRateRepository
+import com.monatlich.domain.repository.RecurringRepository
 import com.monatlich.domain.repository.SettingsRepository
 import com.monatlich.domain.repository.TransactionRepository
 import kotlinx.coroutines.flow.Flow
@@ -98,6 +100,9 @@ class FakeTransactionRepository(initial: List<Transaction> = emptyList()) : Tran
 
     override suspend fun delete(id: Long) = state.update { list -> list.filterNot { it.id == id } }
 
+    override suspend fun getForRecurring(recurringId: Long, month: YearMonth): List<Transaction> =
+        state.value.filter { it.recurringId == recurringId && it.month == month }.sortedWith(compareBy({ it.date }, { it.id }))
+
     /** Mirrors the real implementation: group by (category, currency, rate), convert each group, sum. */
     override fun observeTotalsByCategoryInBase(month: YearMonth, type: TransactionType, base: Currency): Flow<Map<Long, Money>> =
         state.map { list ->
@@ -125,6 +130,31 @@ class FakeExchangeRateRepository(initial: Map<Currency, BigDecimal> = emptyMap()
 
     override suspend fun currentRateToBase(currency: Currency, base: Currency): BigDecimal? =
         if (currency == base) BigDecimal.ONE else get(currency)?.rateToBase
+}
+
+class FakeRecurringRepository(initial: List<RecurringTransaction> = emptyList()) : RecurringRepository {
+    val state = MutableStateFlow(initial)
+    private var nextId = (initial.maxOfOrNull { it.id } ?: 0L) + 1
+
+    override fun observeAll(): Flow<List<RecurringTransaction>> =
+        state.map { list -> list.sortedWith(compareBy({ it.dayOfMonth }, { it.id })) }
+
+    override fun observe(id: Long): Flow<RecurringTransaction?> = state.map { list -> list.firstOrNull { it.id == id } }
+    override suspend fun get(id: Long): RecurringTransaction? = state.value.firstOrNull { it.id == id }
+
+    override suspend fun add(rule: RecurringTransaction): Long {
+        val id = nextId++
+        state.update { it + rule.copy(id = id) }
+        return id
+    }
+
+    override suspend fun update(rule: RecurringTransaction) =
+        state.update { list -> list.map { if (it.id == rule.id) rule else it } }
+
+    override suspend fun setActive(id: Long, active: Boolean) =
+        state.update { list -> list.map { if (it.id == id) it.copy(active = active) else it } }
+
+    override suspend fun delete(id: Long) = state.update { list -> list.filterNot { it.id == id } }
 }
 
 class FakeSettingsRepository(initial: Currency = Currency.EUR) : SettingsRepository {

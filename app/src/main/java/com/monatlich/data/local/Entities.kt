@@ -59,8 +59,15 @@ data class BudgetEntity(
             onDelete = ForeignKey.RESTRICT,
             onUpdate = ForeignKey.RESTRICT,
         ),
+        ForeignKey(
+            entity = RecurringTransactionEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["recurringId"],
+            onDelete = ForeignKey.SET_NULL,
+            onUpdate = ForeignKey.NO_ACTION,
+        ),
     ],
-    indices = [Index(value = ["month"]), Index(value = ["categoryId"])],
+    indices = [Index(value = ["month"]), Index(value = ["categoryId"]), Index(value = ["recurringId"])],
 )
 data class TransactionEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0L,
@@ -73,9 +80,43 @@ data class TransactionEntity(
     val rateToBase: BigDecimal,
     val type: TransactionType,
     val note: String?,
+    /** Set on rows generated from a [RecurringTransactionEntity]; nulled when that rule is deleted. */
+    val recurringId: Long? = null,
 ) {
     companion object {
         const val TABLE = "transactions"
+    }
+}
+
+@Entity(
+    tableName = RecurringTransactionEntity.TABLE,
+    foreignKeys = [
+        ForeignKey(
+            entity = CategoryEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["categoryId"],
+            onDelete = ForeignKey.RESTRICT,
+            onUpdate = ForeignKey.RESTRICT,
+        ),
+    ],
+    indices = [Index(value = ["categoryId"])],
+)
+data class RecurringTransactionEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0L,
+    val categoryId: Long,
+    val amountMinor: Long,
+    val currencyCode: String,
+    val type: TransactionType,
+    val note: String?,
+    /** 1..31; clamped to the month length at generation time. */
+    val dayOfMonth: Int,
+    val startMonth: YearMonth,
+    /** Inclusive; `null` = open ended. */
+    val endMonth: YearMonth?,
+    val active: Boolean,
+) {
+    companion object {
+        const val TABLE = "recurring_transactions"
     }
 }
 

@@ -3,12 +3,14 @@ package com.monatlich.data.repository
 import com.monatlich.data.local.BudgetEntity
 import com.monatlich.data.local.CategoryEntity
 import com.monatlich.data.local.ExchangeRateEntity
+import com.monatlich.data.local.RecurringTransactionEntity
 import com.monatlich.data.local.TransactionEntity
 import com.monatlich.domain.model.Budget
 import com.monatlich.domain.model.Category
 import com.monatlich.domain.model.Currency
 import com.monatlich.domain.model.ExchangeRate
 import com.monatlich.domain.model.Money
+import com.monatlich.domain.model.RecurringTransaction
 import com.monatlich.domain.model.Transaction
 
 internal fun CategoryEntity.toDomain() = Category(
@@ -52,6 +54,7 @@ internal fun TransactionEntity.toDomain() = Transaction(
     rateToBase = rateToBase,
     type = type,
     note = note,
+    recurringId = recurringId,
 )
 
 internal fun Transaction.toEntity() = TransactionEntity(
@@ -64,6 +67,7 @@ internal fun Transaction.toEntity() = TransactionEntity(
     rateToBase = rateToBase,
     type = type,
     note = note,
+    recurringId = recurringId,
 )
 
 internal fun ExchangeRateEntity.toDomain() = ExchangeRate(
@@ -76,4 +80,29 @@ internal fun ExchangeRate.toEntity() = ExchangeRateEntity(
     currencyCode = currency.code,
     rateToBase = rateToBase,
     updatedAt = updatedAt,
+)
+
+internal fun RecurringTransactionEntity.toDomain() = RecurringTransaction(
+    id = id,
+    categoryId = categoryId,
+    amount = Money(amountMinor, Currency.fromCode(currencyCode)),
+    type = type,
+    note = note,
+    dayOfMonth = dayOfMonth,
+    startMonth = startMonth,
+    endMonth = endMonth,
+    active = active,
+)
+
+internal fun RecurringTransaction.toEntity() = RecurringTransactionEntity(
+    id = id,
+    categoryId = categoryId,
+    amountMinor = amount.amountMinor,
+    currencyCode = amount.currency.code,
+    type = type,
+    note = note,
+    dayOfMonth = dayOfMonth,
+    startMonth = startMonth,
+    endMonth = endMonth,
+    active = active,
 )

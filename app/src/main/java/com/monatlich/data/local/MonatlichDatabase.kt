@@ -7,8 +7,8 @@ import androidx.room.TypeConverters
 /**
  * The app's single Room database.
  *
- * Schema changes bump [VERSION] and ship a `Migration`; the exported schema JSON lives in
- * `app/schemas/` and must be committed alongside.
+ * Schema changes bump [VERSION] and ship a `Migration` in [Migrations]; the exported schema JSON
+ * lives in `app/schemas/` and must be committed alongside.
  */
 @Database(
     entities = [
@@ -16,6 +16,7 @@ import androidx.room.TypeConverters
         BudgetEntity::class,
         TransactionEntity::class,
         ExchangeRateEntity::class,
+        RecurringTransactionEntity::class,
     ],
     version = MonatlichDatabase.VERSION,
     exportSchema = true,
@@ -26,9 +27,11 @@ abstract class MonatlichDatabase : RoomDatabase() {
     abstract fun budgetDao(): BudgetDao
     abstract fun transactionDao(): TransactionDao
     abstract fun exchangeRateDao(): ExchangeRateDao
+    abstract fun recurringTransactionDao(): RecurringTransactionDao
 
     companion object {
         const val NAME = "monatlich.db"
-        const val VERSION = 1
+        /** 1: M2 baseline · 2: M8 recurring transactions ([Migrations.MIGRATION_1_2]). */
+        const val VERSION = 2
     }
 }

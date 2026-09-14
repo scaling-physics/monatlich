@@ -3,11 +3,13 @@ package com.monatlich.di
 import com.monatlich.data.repository.BudgetRepositoryImpl
 import com.monatlich.data.repository.CategoryRepositoryImpl
 import com.monatlich.data.repository.ExchangeRateRepositoryImpl
+import com.monatlich.data.repository.RecurringRepositoryImpl
 import com.monatlich.data.repository.SettingsRepositoryImpl
 import com.monatlich.data.repository.TransactionRepositoryImpl
 import com.monatlich.domain.repository.BudgetRepository
 import com.monatlich.domain.repository.CategoryRepository
 import com.monatlich.domain.repository.ExchangeRateRepository
+import com.monatlich.domain.repository.RecurringRepository
 import com.monatlich.domain.repository.SettingsRepository
 import com.monatlich.domain.repository.TransactionRepository
 import dagger.Binds
@@ -39,4 +41,8 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindSettingsRepository(impl: SettingsRepositoryImpl): SettingsRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindRecurringRepository(impl: RecurringRepositoryImpl): RecurringRepository
 }

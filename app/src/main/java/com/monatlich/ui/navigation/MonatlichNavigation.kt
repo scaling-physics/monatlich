@@ -48,6 +48,7 @@ import com.monatlich.ui.common.rememberMotion
 import com.monatlich.ui.budget.CopyBudgetsPrompt
 import com.monatlich.ui.budget.SetBudgetSheet
 import com.monatlich.ui.overview.OverviewRoute
+import com.monatlich.ui.recurring.RecurringRoute
 import com.monatlich.ui.settings.SettingsRoute
 import com.monatlich.ui.transactions.TransactionsScreen
 
@@ -55,6 +56,9 @@ const val NAV_BAR_TAG = "nav_bar"
 
 /** Non-top-level drill-down from Settings: manage categories. Reach via [navigateToCategories]. */
 const val CATEGORIES_ROUTE = "categories"
+
+/** Non-top-level drill-down from Settings: recurring transactions. Reach via [navigateToRecurring]. */
+const val RECURRING_ROUTE = "recurring"
 
 /**
  * The three top-level destinations. String routes for now; switch to `@Serializable` objects
@@ -171,7 +175,10 @@ private fun MonatlichNavHost(
         }
         composable(TopLevelDestination.Transactions.route) { TransactionsScreen() }
         composable(TopLevelDestination.Settings.route) {
-            SettingsRoute(onManageCategories = { navController.navigateToCategories() })
+            SettingsRoute(
+                onManageCategories = { navController.navigateToCategories() },
+                onManageRecurring = { navController.navigateToRecurring() },
+            )
         }
         composable(
             route = CATEGORIES_ROUTE,
@@ -181,6 +188,15 @@ private fun MonatlichNavHost(
             popExitTransition = { sharedAxisVerticalExit(motion) },
         ) {
             CategoriesRoute(onBack = { navController.popBackStack() })
+        }
+        composable(
+            route = RECURRING_ROUTE,
+            enterTransition = { sharedAxisVerticalEnter(motion) },
+            exitTransition = { fadeThroughExit(motion) },
+            popEnterTransition = { fadeThroughEnter(motion) },
+            popExitTransition = { sharedAxisVerticalExit(motion) },
+        ) {
+            RecurringRoute(onBack = { navController.popBackStack() })
         }
     }
 }
@@ -222,6 +238,11 @@ private fun sharedAxisVerticalExit(motion: Motion): ExitTransition {
 /** Pushes the category manager on top of the current tab. */
 fun NavHostController.navigateToCategories() {
     navigate(CATEGORIES_ROUTE) { launchSingleTop = true }
+}
+
+/** Pushes the recurring-transactions manager on top of the current tab. */
+fun NavHostController.navigateToRecurring() {
+    navigate(RECURRING_ROUTE) { launchSingleTop = true }
 }
 
 private fun NavHostController.navigateToTopLevel(destination: TopLevelDestination) {

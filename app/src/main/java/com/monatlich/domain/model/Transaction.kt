@@ -12,6 +12,9 @@ enum class TransactionType { EXPENSE, INCOME }
  * [rateToBase] is the exchange rate from [amount]'s currency to the base currency *at entry time*
  * (`1 amount.currency == rateToBase base`), so history never shifts when the rate table changes.
  * It is `1` when the transaction is already in the base currency.
+ *
+ * [recurringId] links an auto-generated entry to its [RecurringTransaction]; it is cleared (not
+ * cascaded) when the rule is deleted, so the entry survives as a plain transaction.
  */
 data class Transaction(
     val id: Long = 0L,
@@ -21,6 +24,7 @@ data class Transaction(
     val rateToBase: BigDecimal,
     val type: TransactionType,
     val note: String? = null,
+    val recurringId: Long? = null,
 ) {
     init {
         require(rateToBase.signum() > 0) { "rateToBase must be positive: $rateToBase" }
