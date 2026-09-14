@@ -3,8 +3,61 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <!-- Three rising bars: a month's budget filling up. -->
-    <path android:fillColor="#FFF3EE" android:pathData="M30,70h10v10h-10z" />
-    <path android:fillColor="#FFF3EE" android:pathData="M49,56h10v24h-10z" />
-    <path android:fillColor="#FFF3EE" android:pathData="M68,40h10v40h-10z" />
+    <!-- A cat pawing at a piggy bank: playful mark for a personal budgeting app. Built from bold
+         blob + round-cap-stroke shapes (no fine detail) so it stays legible at launcher size. -->
+
+    <!-- Cat: haunches, head, ears, reaching paw, curled tail. -->
+    <path android:fillColor="#FFF3EE" android:pathData="M19,62 A11,13 0 1,0 41,62 A11,13 0 1,0 19,62 Z" />
+    <path android:fillColor="#FFF3EE" android:pathData="M25,43 A9,9 0 1,0 43,43 A9,9 0 1,0 25,43 Z" />
+    <path android:fillColor="#FFF3EE" android:pathData="M27,37 L29,27 L34,36 Z" />
+    <path android:fillColor="#FFF3EE" android:pathData="M34,36 L39,27 L41,37 Z" />
+    <path
+        android:pathData="M37,58 L48,51"
+        android:strokeColor="#FFF3EE"
+        android:strokeWidth="7"
+        android:strokeLineCap="round" />
+    <path android:fillColor="#FFF3EE" android:pathData="M44.5,51 A4,4 0 1,0 52.5,51 A4,4 0 1,0 44.5,51 Z" />
+    <path
+        android:pathData="M19,68 Q7,73 13,53"
+        android:strokeColor="#FFF3EE"
+        android:strokeWidth="7"
+        android:strokeLineCap="round" />
+
+    <!-- Piggy bank: body, snout, ear, legs, tail curl. -->
+    <path android:fillColor="#FFF3EE" android:pathData="M48,60 A17,12 0 1,0 82,60 A17,12 0 1,0 48,60 Z" />
+    <path android:fillColor="#FFF3EE" android:pathData="M78,60 A5,5 0 1,0 88,60 A5,5 0 1,0 78,60 Z" />
+    <path android:fillColor="#FFF3EE" android:pathData="M59,50 L62,43 L66,49 Z" />
+    <path
+        android:pathData="M54,71 L54,79"
+        android:strokeColor="#FFF3EE"
+        android:strokeWidth="4.5"
+        android:strokeLineCap="round" />
+    <path
+        android:pathData="M61,72 L61,80"
+        android:strokeColor="#FFF3EE"
+        android:strokeWidth="4.5"
+        android:strokeLineCap="round" />
+    <path
+        android:pathData="M69,72 L69,80"
+        android:strokeColor="#FFF3EE"
+        android:strokeWidth="4.5"
+        android:strokeLineCap="round" />
+    <path
+        android:pathData="M76,71 L76,79"
+        android:strokeColor="#FFF3EE"
+        android:strokeWidth="4.5"
+        android:strokeLineCap="round" />
+    <path
+        android:pathData="M47,56 Q39,49 44,59"
+        android:strokeColor="#FFF3EE"
+        android:strokeWidth="5.5"
+        android:strokeLineCap="round" />
+
+    <!-- Coin slot and eye, cut into the piggy bank with the background colour. -->
+    <path
+        android:pathData="M56,47 L67,47"
+        android:strokeColor="#6B1F2A"
+        android:strokeWidth="3.5"
+        android:strokeLineCap="round" />
+    <path android:fillColor="#6B1F2A" android:pathData="M83.3,58 A1.7,1.7 0 1,0 86.7,58 A1.7,1.7 0 1,0 83.3,58 Z" />
 </vector>
