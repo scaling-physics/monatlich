@@ -110,6 +110,7 @@ class OverviewViewModel @Inject internal constructor(
             currencyCode = (summary?.baseCurrency ?: DEFAULT_CURRENCY).code,
             totalSpentMinor = summary?.totalSpentInBase?.amountMinor ?: 0L,
             totalBudgetMinor = summary?.totalBudgetInBase?.amountMinor ?: 0L,
+            totalIncomeMinor = summary?.totalIncomeInBase?.amountMinor ?: 0L,
             categories = categories,
             isLoading = summary == null,
             isAddSheetVisible = flags.isAddSheetVisible,

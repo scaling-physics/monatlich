@@ -7,10 +7,10 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import com.monatlich.ui.navigation.NAV_BAR_TAG
-import com.monatlich.ui.overview.ADD_EXPENSE_SHEET_TAG
 import com.monatlich.ui.overview.MONTH_LABEL_TAG
 import com.monatlich.ui.overview.OVERVIEW_SCREEN_TAG
 import com.monatlich.ui.transactions.TRANSACTIONS_SCREEN_TAG
+import com.monatlich.ui.transactions.TRANSACTION_EDITOR_SHEET_TAG
 import org.junit.Rule
 import org.junit.Test
 
@@ -31,14 +31,13 @@ class LaunchTest {
         composeRule.onNodeWithText("Transactions").performClick()
         composeRule.waitForIdle()
         composeRule.onNodeWithTag(TRANSACTIONS_SCREEN_TAG).assertIsDisplayed()
-        composeRule.onNodeWithText("Coming in M5").assertIsDisplayed()
     }
 
     @Test
     fun fabOpensAddExpenseSheet() {
         composeRule.onNodeWithContentDescription("Add expense").performClick()
         composeRule.waitForIdle()
-        composeRule.onNodeWithTag(ADD_EXPENSE_SHEET_TAG).assertIsDisplayed()
-        composeRule.onNodeWithText("Add expense").assertIsDisplayed()
+        composeRule.onNodeWithTag(TRANSACTION_EDITOR_SHEET_TAG).assertIsDisplayed()
+        composeRule.onNodeWithText("Add transaction").assertIsDisplayed()
     }
 }

@@ -83,6 +83,9 @@ class FakeTransactionRepository(initial: List<Transaction> = emptyList()) : Tran
     override fun observeForMonth(month: YearMonth): Flow<List<Transaction>> =
         state.map { list -> list.filter { it.month == month }.sortedWith(compareByDescending<Transaction> { it.date }.thenByDescending { it.id }) }
 
+    override suspend fun getAll(): List<Transaction> =
+        state.value.sortedWith(compareByDescending<Transaction> { it.date }.thenByDescending { it.id })
+
     override fun observeForCategory(categoryId: Long, month: YearMonth): Flow<List<Transaction>> =
         observeForMonth(month).map { list -> list.filter { it.categoryId == categoryId } }
 

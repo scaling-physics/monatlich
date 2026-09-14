@@ -18,6 +18,8 @@ class TransactionRepositoryImpl @Inject constructor(
     override fun observeForMonth(month: YearMonth): Flow<List<Transaction>> =
         dao.observeForMonth(month).map { list -> list.map { it.toDomain() } }
 
+    override suspend fun getAll(): List<Transaction> = dao.getAll().map { it.toDomain() }
+
     override fun observeForCategory(categoryId: Long, month: YearMonth): Flow<List<Transaction>> =
         dao.observeForCategoryAndMonth(categoryId, month).map { list -> list.map { it.toDomain() } }
 

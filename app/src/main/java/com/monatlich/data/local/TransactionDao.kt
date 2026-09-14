@@ -14,6 +14,10 @@ interface TransactionDao {
     @Query("SELECT * FROM transactions WHERE month = :month ORDER BY date DESC, id DESC")
     fun observeForMonth(month: YearMonth): Flow<List<TransactionEntity>>
 
+    /** Every transaction ever logged, newest first; backs CSV export. */
+    @Query("SELECT * FROM transactions ORDER BY date DESC, id DESC")
+    suspend fun getAll(): List<TransactionEntity>
+
     @Query(
         "SELECT * FROM transactions WHERE month = :month AND categoryId = :categoryId " +
             "ORDER BY date DESC, id DESC",

@@ -9,12 +9,12 @@ app at that stage of evolution. Screenshots live in `docs/screenshots/m<N>/`.
 | M1 | Theme + navigation shell           | ✅     | m1   | Maroon theme, 3-tab bottom nav, animated month switcher, placeholders   |
 | M2 | Data layer (Room, models, repos)   | ✅     | m2   | No visible change; `./gradlew test` green with full repo coverage       |
 | M3 | Categories + budgets               | ✅     | m3   | Create categories, set budgets, overview shows budget rows              |
-| M4 | Add expense + live overview        | ⬜     |      | FAB → sheet → expense; bars animate; remaining updates                  |
-| M5 | Transactions tab, edit / delete    | ⬜     |      | Full MVP loop closed                                                    |
-| M6 | Currencies                         | ⬜     |      | Base currency, per-transaction USD / EUR / INR, rate table              |
-| M7 | Income                             | ⬜     |      | Month shows net (copy-budgets prompt shipped early in M3)                |
-| M8 | Recurring transactions             | ⬜     |      | Rent / subscriptions auto-appear each month                             |
-| M9 | Search / filter, CSV export, backup| ⬜     |      | v1 complete                                                             |
+| M4 | Add expense + live overview        | ✅     |      | FAB → sheet → expense; bars animate; remaining updates                  |
+| M5 | Transactions tab, edit / delete    | ✅     |      | Full MVP loop closed                                                    |
+| M6 | Currencies                         | ✅     |      | Base currency, per-transaction USD / EUR / INR, rate table              |
+| M7 | Income                             | ✅     |      | Month shows net (copy-budgets prompt shipped early in M3)                |
+| M8 | Recurring transactions             | ✅     |      | Rent / subscriptions auto-appear each month                             |
+| M9 | Search / filter, CSV export, backup| ✅     |      | v1 complete                                                             |
 
 Legend: ⬜ not started · 🔄 in progress · ✅ done
 
@@ -47,3 +47,18 @@ Legend: ⬜ not started · 🔄 in progress · ✅ done
   table, and Manage categories (add/rename/reorder/archive, icon + colour). Integration fixes:
   merged two duplicate icon/badge helpers into `ui/common`, auto-focus in the category editor,
   real badge in the budget sheet. 110 unit + 21 instrumented tests green. Screenshots: `docs/screenshots/m3/`.
+- 2026-09-14 — **M4–M9 done in one pass** (M8 recurring transactions had already shipped ahead of
+  turn in an earlier session; this pass filled in the M4–M7 gap it left and closed out M9). The
+  data layer (Room, repositories) from M2/M8 already covered nearly everything needed, so this was
+  mostly UI: `TransactionEditorSheet` (add/edit expense or income — amount keypad, currency chips,
+  type toggle, category chips, Today/Yesterday/date-picker, note) reused from the FAB on Overview
+  and from a new FAB on Transactions; Transactions tab replaced its placeholder with a real
+  per-month list (date-grouped, swipe-to-delete with undo, search box, type/category filter chips,
+  tap-to-edit); Overview's total card gained an income/net row once any income is logged; Settings
+  gained a "Manage data" drill-down (M9) with CSV export and a raw-SQLite-file backup/restore
+  (checkpoint-and-copy on backup; close-overwrite-restart on restore, via
+  `Intent.makeRestartActivityTask` + process kill) — both driven by the Storage Access Framework,
+  no new dependency. Manually verified end-to-end on the emulator: add → overview total updates →
+  transactions list shows it → edit → swipe-delete-with-undo → CSV export produced a real file →
+  backup produced a valid SQLite file → restore correctly closed the DB, overwrote it, and the app
+  came back up cleanly on Overview. 150 unit + 58 instrumented tests green.

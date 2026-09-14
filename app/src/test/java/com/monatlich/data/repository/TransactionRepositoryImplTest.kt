@@ -39,6 +39,7 @@ private class FakeTransactionDao : TransactionDao {
 
     override fun observeById(id: Long): Flow<TransactionEntity?> = rows.map { list -> list.firstOrNull { it.id == id } }
     override suspend fun getById(id: Long): TransactionEntity? = rows.value.firstOrNull { it.id == id }
+    override suspend fun getAll(): List<TransactionEntity> = ordered(rows.value)
 
     override suspend fun insert(entity: TransactionEntity): Long {
         check(entity.id == 0L) { "autoGenerate expects id 0" }
@@ -170,6 +171,16 @@ class TransactionRepositoryImplTest {
         repo.add(expense(2, "2026-09-20", Money(10000, USD), rate = "0.90"))
         val spent = repo.observeTotalsByCategoryInBase(september, TransactionType.EXPENSE, USD).first()
         assertEquals(Money(10000, USD), spent[2L])
+    }
+
+    @Test
+    fun `getAll returns every transaction across all months, newest first`() = runTest {
+        repo.add(expense(1, "2026-09-01", Money(100, EUR)))
+        repo.add(expense(1, "2026-10-01", Money(200, EUR)))
+        repo.add(expense(1, "2026-08-15", Money(300, EUR)))
+
+        val all = repo.getAll()
+        assertEquals(listOf(200L, 100L, 300L), all.map { it.amount.amountMinor })
     }
 
     @Test

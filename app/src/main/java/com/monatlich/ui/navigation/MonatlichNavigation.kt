@@ -47,10 +47,12 @@ import com.monatlich.ui.common.MotionTokens
 import com.monatlich.ui.common.rememberMotion
 import com.monatlich.ui.budget.CopyBudgetsPrompt
 import com.monatlich.ui.budget.SetBudgetSheet
+import com.monatlich.ui.data.DataRoute
 import com.monatlich.ui.overview.OverviewRoute
 import com.monatlich.ui.recurring.RecurringRoute
 import com.monatlich.ui.settings.SettingsRoute
-import com.monatlich.ui.transactions.TransactionsScreen
+import com.monatlich.ui.transactions.TransactionEditorSheet
+import com.monatlich.ui.transactions.TransactionsRoute
 
 const val NAV_BAR_TAG = "nav_bar"
 
@@ -59,6 +61,9 @@ const val CATEGORIES_ROUTE = "categories"
 
 /** Non-top-level drill-down from Settings: recurring transactions. Reach via [navigateToRecurring]. */
 const val RECURRING_ROUTE = "recurring"
+
+/** Non-top-level drill-down from Settings: CSV export and backup / restore. Reach via [navigateToData]. */
+const val DATA_ROUTE = "data"
 
 /**
  * The three top-level destinations. String routes for now; switch to `@Serializable` objects
@@ -171,13 +176,17 @@ private fun MonatlichNavHost(
             OverviewRoute(
                 categorySheet = { id, month, dismiss -> SetBudgetSheet(id, month, dismiss) },
                 copyBudgetsPrompt = { month, dismiss -> CopyBudgetsPrompt(month, dismiss) },
+                addTransactionSheet = { month, dismiss ->
+                    TransactionEditorSheet(month = month, transactionId = null, onDismiss = dismiss)
+                },
             )
         }
-        composable(TopLevelDestination.Transactions.route) { TransactionsScreen() }
+        composable(TopLevelDestination.Transactions.route) { TransactionsRoute() }
         composable(TopLevelDestination.Settings.route) {
             SettingsRoute(
                 onManageCategories = { navController.navigateToCategories() },
                 onManageRecurring = { navController.navigateToRecurring() },
+                onManageData = { navController.navigateToData() },
             )
         }
         composable(
@@ -197,6 +206,15 @@ private fun MonatlichNavHost(
             popExitTransition = { sharedAxisVerticalExit(motion) },
         ) {
             RecurringRoute(onBack = { navController.popBackStack() })
+        }
+        composable(
+            route = DATA_ROUTE,
+            enterTransition = { sharedAxisVerticalEnter(motion) },
+            exitTransition = { fadeThroughExit(motion) },
+            popEnterTransition = { fadeThroughEnter(motion) },
+            popExitTransition = { sharedAxisVerticalExit(motion) },
+        ) {
+            DataRoute(onBack = { navController.popBackStack() })
         }
     }
 }
@@ -243,6 +261,11 @@ fun NavHostController.navigateToCategories() {
 /** Pushes the recurring-transactions manager on top of the current tab. */
 fun NavHostController.navigateToRecurring() {
     navigate(RECURRING_ROUTE) { launchSingleTop = true }
+}
+
+/** Pushes the "Manage data" screen (CSV export, backup / restore) on top of the current tab. */
+fun NavHostController.navigateToData() {
+    navigate(DATA_ROUTE) { launchSingleTop = true }
 }
 
 private fun NavHostController.navigateToTopLevel(destination: TopLevelDestination) {

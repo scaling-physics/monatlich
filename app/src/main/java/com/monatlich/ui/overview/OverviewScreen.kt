@@ -6,10 +6,12 @@ import androidx.compose.animation.ContentTransform
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
+import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
@@ -44,15 +46,14 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -94,7 +95,6 @@ import kotlin.math.abs
 
 const val OVERVIEW_SCREEN_TAG = "overview_screen"
 const val ADD_EXPENSE_FAB_TAG = "add_expense_fab"
-const val ADD_EXPENSE_SHEET_TAG = "add_expense_sheet"
 const val MONTH_LABEL_TAG = "month_label"
 
 /**
@@ -109,6 +109,7 @@ fun OverviewRoute(
     viewModel: OverviewViewModel = hiltViewModel(),
     categorySheet: @Composable (categoryId: Long, month: YearMonth, onDismiss: () -> Unit) -> Unit = { _, _, _ -> },
     copyBudgetsPrompt: @Composable (month: YearMonth, onDismiss: () -> Unit) -> Unit = { _, _ -> },
+    addTransactionSheet: @Composable (month: YearMonth, onDismiss: () -> Unit) -> Unit = { _, _ -> },
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     OverviewScreen(
@@ -116,6 +117,7 @@ fun OverviewRoute(
         onEvent = viewModel::onEvent,
         categorySheet = categorySheet,
         copyBudgetsPrompt = copyBudgetsPrompt,
+        addTransactionSheet = addTransactionSheet,
     )
 }
 
@@ -127,6 +129,7 @@ fun OverviewScreen(
     modifier: Modifier = Modifier,
     categorySheet: @Composable (categoryId: Long, month: YearMonth, onDismiss: () -> Unit) -> Unit = { _, _, _ -> },
     copyBudgetsPrompt: @Composable (month: YearMonth, onDismiss: () -> Unit) -> Unit = { _, _ -> },
+    addTransactionSheet: @Composable (month: YearMonth, onDismiss: () -> Unit) -> Unit = { _, _ -> },
 ) {
     Scaffold(
         modifier = modifier.testTag(OVERVIEW_SCREEN_TAG),
@@ -161,7 +164,7 @@ fun OverviewScreen(
     }
 
     if (state.isAddSheetVisible) {
-        AddExpenseSheet(onDismiss = { onEvent(OverviewEvent.AddSheetDismissed) })
+        addTransactionSheet(state.month) { onEvent(OverviewEvent.AddSheetDismissed) }
     }
     state.selectedCategoryId?.let { categoryId ->
         categorySheet(categoryId, state.month) { onEvent(OverviewEvent.CategorySheetDismissed) }
@@ -404,6 +407,63 @@ private fun TotalCard(state: OverviewUiState, modifier: Modifier = Modifier) {
                 style = AmountTextStyle.copy(fontSize = 14.sp),
                 color = if (state.hasAnyBudget) statusColor else MaterialTheme.colorScheme.onPrimaryContainer,
             )
+            AnimatedVisibility(
+                visible = state.hasIncome,
+                enter = fadeIn(LocalMotion.current.feedback()) + expandVertically(LocalMotion.current.layout()),
+                exit = fadeOut(LocalMotion.current.feedback()) + shrinkVertically(LocalMotion.current.layout()),
+            ) {
+                NetIncomeRow(state = state, currency = currency)
+            }
+        }
+    }
+}
+
+/** Income vs. spend for the month, shown only once any income has been logged. */
+@Composable
+private fun NetIncomeRow(state: OverviewUiState, currency: Currency) {
+    val animatedIncome by animateMinorAmountAsState(state.totalIncomeMinor)
+    val animatedNet by animateMinorAmountAsState(abs(state.netMinor))
+    val netColor = if (state.netMinor < 0L) {
+        MaterialTheme.colorScheme.error
+    } else {
+        MonatlichThemeTokens.budgetColors.onTrack
+    }
+    Column(modifier = Modifier.padding(top = 14.dp)) {
+        HorizontalDivider(color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.12f))
+        Spacer(Modifier.height(10.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column {
+                Text(
+                    text = "Income",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f),
+                )
+                Text(
+                    text = "+${Money(animatedIncome, currency).format()}",
+                    style = AmountTextStyle.copy(fontSize = 15.sp),
+                    color = MonatlichThemeTokens.budgetColors.onTrack,
+                )
+            }
+            Column(horizontalAlignment = Alignment.End) {
+                Text(
+                    text = "Net",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f),
+                )
+                Text(
+                    text = if (state.netMinor < 0L) {
+                        "-${Money(animatedNet, currency).format()}"
+                    } else {
+                        "+${Money(animatedNet, currency).format()}"
+                    },
+                    style = AmountTextStyle.copy(fontSize = 15.sp),
+                    color = netColor,
+                )
+            }
         }
     }
 }
@@ -511,39 +571,6 @@ private fun SkeletonRow(modifier: Modifier = Modifier) {
 @Composable
 private fun rememberCurrency(code: String): Currency = remember(code) { Currency.fromCode(code) }
 
-// --- Add-expense sheet (placeholder until M4) --------------------------------------------------
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun AddExpenseSheet(onDismiss: () -> Unit) {
-    val sheetState = rememberModalBottomSheetState()
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        sheetState = sheetState,
-        modifier = Modifier.testTag(ADD_EXPENSE_SHEET_TAG),
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 24.dp)
-                .padding(bottom = 32.dp)
-                .navigationBarsPadding(),
-        ) {
-            Text(
-                text = "Add expense",
-                style = MaterialTheme.typography.headlineSmall,
-            )
-            Spacer(Modifier.height(8.dp))
-            Text(
-                text = "The expense form arrives in M4.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Spacer(Modifier.height(120.dp))
-        }
-    }
-}
-
 // --- Previews ----------------------------------------------------------------------------------
 
 @Preview(showBackground = true)
@@ -557,6 +584,7 @@ private fun OverviewScreenPreview() {
                 currencyCode = "EUR",
                 totalSpentMinor = 132_500,
                 totalBudgetMinor = 199_000,
+                totalIncomeMinor = 320_000,
                 categories = listOf(
                     CategoryRowUiState(1, "Groceries", "ShoppingCart", 0xFF2E7D32, 31_250, 45_000, hasBudget = true),
                     CategoryRowUiState(2, "Rent", "Home", 0xFF6B1F2A, 120_000, 120_000, hasBudget = true),

@@ -248,6 +248,29 @@ class OverviewViewModelTest {
     }
 
     @Test
+    fun `income transactions surface as totalIncomeMinor and net`() = runTest {
+        expense(groceries, LocalDate.of(2026, 9, 3), "100")
+        transactions.add(
+            Transaction(
+                categoryId = rent.id,
+                date = LocalDate.of(2026, 9, 1),
+                amount = eur("3000"),
+                rateToBase = BigDecimal.ONE,
+                type = TransactionType.INCOME,
+            ),
+        )
+
+        val vm = viewModel()
+        vm.uiState.test {
+            val state = awaitItemMatching { it.totalIncomeMinor > 0L }
+            assertEquals(300_000L, state.totalIncomeMinor)
+            assertEquals(10_000L, state.totalSpentMinor)
+            assertEquals(290_000L, state.netMinor)
+            assertTrue(state.hasIncome)
+        }
+    }
+
+    @Test
     fun `previous month crosses the year boundary`() = runTest {
         val vm = viewModel()
         vm.uiState.test {

@@ -17,6 +17,7 @@ data class OverviewUiState(
     val currencyCode: String,
     val totalSpentMinor: Long,
     val totalBudgetMinor: Long,
+    val totalIncomeMinor: Long,
     val categories: List<CategoryRowUiState>,
     val isLoading: Boolean = false,
     val isAddSheetVisible: Boolean = false,
@@ -29,6 +30,8 @@ data class OverviewUiState(
     val totalProgress: Float get() = progressOf(totalSpentMinor, totalBudgetMinor)
     val isOverBudget: Boolean get() = totalSpentMinor > totalBudgetMinor
     val hasAnyBudget: Boolean get() = categories.any { it.hasBudget }
+    val netMinor: Long get() = totalIncomeMinor - totalSpentMinor
+    val hasIncome: Boolean get() = totalIncomeMinor != 0L
 }
 
 @Immutable

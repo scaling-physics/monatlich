@@ -11,6 +11,9 @@ interface TransactionRepository {
     /** All transactions in [month], newest first. */
     fun observeForMonth(month: YearMonth): Flow<List<Transaction>>
 
+    /** Every transaction ever logged, newest first; backs CSV export. */
+    suspend fun getAll(): List<Transaction>
+
     /** Transactions of one category in [month], newest first. */
     fun observeForCategory(categoryId: Long, month: YearMonth): Flow<List<Transaction>>
 
