@@ -3,14 +3,14 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <!-- Brand mark: round cat face with a coin pendant. -->
+    <!-- Brand mark, dark theme: round cat face with a coin pendant. -->
 
     <!-- Ears. -->
     <path android:fillColor="#D9A441" android:pathData="M40,34 L36,15 L52,28 Z" />
     <path android:fillColor="#D9A441" android:pathData="M56,28 L72,15 L68,34 Z" />
 
     <!-- Head. -->
-    <path android:fillColor="#6B1F2A" android:pathData="M33,46 A21,21 0 1,0 75,46 A21,21 0 1,0 33,46 Z" />
+    <path android:fillColor="#D98FA5" android:pathData="M33,46 A21,21 0 1,0 75,46 A21,21 0 1,0 33,46 Z" />
 
     <!-- Eyes. -->
     <path android:fillColor="#FFF3EE" android:pathData="M36,44 A7,7 0 1,0 50,44 A7,7 0 1,0 36,44 Z" />
