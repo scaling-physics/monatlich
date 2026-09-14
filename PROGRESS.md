@@ -62,3 +62,4 @@ Legend: ⬜ not started · 🔄 in progress · ✅ done
   transactions list shows it → edit → swipe-delete-with-undo → CSV export produced a real file →
   backup produced a valid SQLite file → restore correctly closed the DB, overwrote it, and the app
   came back up cleanly on Overview. 150 unit + 58 instrumented tests green.
+  Screenshots: `docs/screenshots/m4-m9/`.
