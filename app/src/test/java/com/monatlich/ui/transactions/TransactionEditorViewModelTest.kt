@@ -10,6 +10,7 @@ import com.monatlich.domain.usecase.FakeExchangeRateRepository
 import com.monatlich.domain.usecase.FakeSettingsRepository
 import com.monatlich.domain.usecase.FakeTransactionRepository
 import com.monatlich.ui.MainDispatcherRule
+import com.monatlich.widget.WidgetRefresher
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -40,7 +41,11 @@ class TransactionEditorViewModelTest {
     private val rates = FakeExchangeRateRepository(mapOf(Currency.USD to BigDecimal("0.92")))
     private val settings = FakeSettingsRepository(Currency.EUR)
 
-    private fun viewModel() = TransactionEditorViewModel(transactions, categories, settings, rates, clock)
+    private val widgetRefresher = object : WidgetRefresher {
+        override suspend fun refresh() {}
+    }
+
+    private fun viewModel() = TransactionEditorViewModel(transactions, categories, settings, rates, clock, widgetRefresher)
 
     @Test
     fun `loadNew in the current month defaults to today, base currency and first category`() = runTest {

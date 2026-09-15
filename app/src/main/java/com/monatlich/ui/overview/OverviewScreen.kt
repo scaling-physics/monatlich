@@ -55,6 +55,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -110,8 +111,16 @@ fun OverviewRoute(
     categorySheet: @Composable (categoryId: Long, month: YearMonth, onDismiss: () -> Unit) -> Unit = { _, _, _ -> },
     copyBudgetsPrompt: @Composable (month: YearMonth, onDismiss: () -> Unit) -> Unit = { _, _ -> },
     addTransactionSheet: @Composable (month: YearMonth, onDismiss: () -> Unit) -> Unit = { _, _ -> },
+    autoOpenAddSheet: Boolean = false,
+    onAutoOpenHandled: () -> Unit = {},
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    LaunchedEffect(autoOpenAddSheet) {
+        if (autoOpenAddSheet) {
+            viewModel.onEvent(OverviewEvent.AddExpenseClicked)
+            onAutoOpenHandled()
+        }
+    }
     OverviewScreen(
         state = state,
         onEvent = viewModel::onEvent,

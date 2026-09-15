@@ -1,6 +1,11 @@
 <resources>
     <string name="app_name">monatlich</string>
 
+    <!-- Home-screen widget -->
+    <string name="widget_label">monatlich</string>
+    <string name="widget_description">This month\'s spending, with a one-tap quick add</string>
+    <string name="widget_add_content_description">Add transaction</string>
+
     <!-- Categories (M3-B) -->
     <string name="categories_title">Categories</string>
     <string name="categories_back">Back</string>

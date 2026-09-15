@@ -63,3 +63,16 @@ Legend: ⬜ not started · 🔄 in progress · ✅ done
   backup produced a valid SQLite file → restore correctly closed the DB, overwrote it, and the app
   came back up cleanly on Overview. 150 unit + 58 instrumented tests green.
   Screenshots: `docs/screenshots/m4-m9/`.
+- 2026-09-15 — **Two "nice to have" items done: charts and a home-screen widget.** Charts: a new
+  `GetMonthlyTrend` use case (six months of base-currency spend/income, live) sits alongside the
+  existing `GetMonthSummary`; a new "Insights" screen (drill-down from Settings, same pattern as
+  Categories/Recurring/Data) shows a donut of this month's spend by category and a paired
+  spend/income bar chart for the trend — both hand-drawn with Compose `Canvas`, no charting
+  dependency. Widget: `androidx.glance` (new dependency) backs a home-screen widget showing the
+  month's spend and remaining budget, with a "+" that deep-links straight into the add-transaction
+  sheet (`MainActivity` reads a `quick_add` intent extra and auto-opens
+  `OverviewEvent.AddExpenseClicked`); a `WidgetRefresher` pushes a Glance update after every
+  transaction save/delete so the widget doesn't wait for its periodic refresh. Manually verified on
+  the emulator: Insights donut/trend match Overview's totals; widget pinned to the home screen
+  renders live data and its "+" opens the add sheet with the keyboard ready. 158 unit + 29
+  instrumented tests green, lint clean.

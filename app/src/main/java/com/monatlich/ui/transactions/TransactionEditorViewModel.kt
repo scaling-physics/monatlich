@@ -10,6 +10,7 @@ import com.monatlich.domain.repository.ExchangeRateRepository
 import com.monatlich.domain.repository.SettingsRepository
 import com.monatlich.domain.repository.TransactionRepository
 import com.monatlich.ui.budget.AmountInputState
+import com.monatlich.widget.WidgetRefresher
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -40,6 +41,7 @@ class TransactionEditorViewModel @Inject constructor(
     private val settings: SettingsRepository,
     private val exchangeRates: ExchangeRateRepository,
     private val clock: Clock,
+    private val widgetRefresher: WidgetRefresher,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(TransactionEditorUiState())
@@ -141,6 +143,7 @@ class TransactionEditorViewModel @Inject constructor(
                 note = state.note.trim().ifEmpty { null },
             )
             if (state.id == null) transactions.add(draft) else transactions.update(draft)
+            widgetRefresher.refresh()
             _uiState.update { it.copy(isSaving = false, isDone = true) }
         }
     }
@@ -150,6 +153,7 @@ class TransactionEditorViewModel @Inject constructor(
         _uiState.update { it.copy(isSaving = true) }
         viewModelScope.launch {
             transactions.delete(id)
+            widgetRefresher.refresh()
             _uiState.update { it.copy(isSaving = false, isDone = true) }
         }
     }

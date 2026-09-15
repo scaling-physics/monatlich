@@ -45,8 +45,8 @@ Personal tool first; structure kept clean enough for a future Play Store release
 - [x] Local backup / restore (full DB export + import)
 
 **Later — nice to have**
-- [ ] Charts: spend by category (month), month-over-month trend
-- [ ] Home-screen widget for quick add
+- [x] Charts: spend by category (month), month-over-month trend
+- [x] Home-screen widget for quick add
 - [ ] Unspent-budget rollover into next month (per-category opt-in)
 - [ ] Opt-in live exchange rate fetch
 - [ ] Add more currencies beyond USD / EUR / INR

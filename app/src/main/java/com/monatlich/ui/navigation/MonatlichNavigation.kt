@@ -48,6 +48,7 @@ import com.monatlich.ui.common.rememberMotion
 import com.monatlich.ui.budget.CopyBudgetsPrompt
 import com.monatlich.ui.budget.SetBudgetSheet
 import com.monatlich.ui.data.DataRoute
+import com.monatlich.ui.insights.InsightsRoute
 import com.monatlich.ui.overview.OverviewRoute
 import com.monatlich.ui.recurring.RecurringRoute
 import com.monatlich.ui.settings.SettingsRoute
@@ -64,6 +65,9 @@ const val RECURRING_ROUTE = "recurring"
 
 /** Non-top-level drill-down from Settings: CSV export and backup / restore. Reach via [navigateToData]. */
 const val DATA_ROUTE = "data"
+
+/** Non-top-level drill-down from Settings: spend-by-category and month-over-month charts. Reach via [navigateToInsights]. */
+const val INSIGHTS_ROUTE = "insights"
 
 /**
  * The three top-level destinations. String routes for now; switch to `@Serializable` objects
@@ -95,10 +99,18 @@ enum class TopLevelDestination(
     ),
 }
 
-/** App root: bottom navigation bar + NavHost. Replaces the M0 placeholder. */
+/**
+ * App root: bottom navigation bar + NavHost. Replaces the M0 placeholder.
+ *
+ * [quickAddRequested] is set when the activity was launched from the home-screen widget's "+"; the
+ * Overview destination consumes it once (opening the add sheet) and reports back via
+ * [onQuickAddHandled] so a later recomposition never reopens it, e.g. after a config change.
+ */
 @Composable
 fun MonatlichAppShell(
     navController: NavHostController = rememberNavController(),
+    quickAddRequested: Boolean = false,
+    onQuickAddHandled: () -> Unit = {},
 ) {
     val motion = rememberMotion()
     CompositionLocalProvider(LocalMotion provides motion) {
@@ -122,7 +134,12 @@ fun MonatlichAppShell(
                     .padding(innerPadding)
                     .consumeWindowInsets(innerPadding),
             ) {
-                MonatlichNavHost(navController = navController, motion = motion)
+                MonatlichNavHost(
+                    navController = navController,
+                    motion = motion,
+                    quickAddRequested = quickAddRequested,
+                    onQuickAddHandled = onQuickAddHandled,
+                )
             }
         }
     }
@@ -163,6 +180,8 @@ private fun MonatlichNavigationBar(
 private fun MonatlichNavHost(
     navController: NavHostController,
     motion: Motion,
+    quickAddRequested: Boolean,
+    onQuickAddHandled: () -> Unit,
 ) {
     NavHost(
         navController = navController,
@@ -179,6 +198,8 @@ private fun MonatlichNavHost(
                 addTransactionSheet = { month, dismiss ->
                     TransactionEditorSheet(month = month, transactionId = null, onDismiss = dismiss)
                 },
+                autoOpenAddSheet = quickAddRequested,
+                onAutoOpenHandled = onQuickAddHandled,
             )
         }
         composable(TopLevelDestination.Transactions.route) { TransactionsRoute() }
@@ -187,6 +208,7 @@ private fun MonatlichNavHost(
                 onManageCategories = { navController.navigateToCategories() },
                 onManageRecurring = { navController.navigateToRecurring() },
                 onManageData = { navController.navigateToData() },
+                onOpenInsights = { navController.navigateToInsights() },
             )
         }
         composable(
@@ -215,6 +237,15 @@ private fun MonatlichNavHost(
             popExitTransition = { sharedAxisVerticalExit(motion) },
         ) {
             DataRoute(onBack = { navController.popBackStack() })
+        }
+        composable(
+            route = INSIGHTS_ROUTE,
+            enterTransition = { sharedAxisVerticalEnter(motion) },
+            exitTransition = { fadeThroughExit(motion) },
+            popEnterTransition = { fadeThroughEnter(motion) },
+            popExitTransition = { sharedAxisVerticalExit(motion) },
+        ) {
+            InsightsRoute(onBack = { navController.popBackStack() })
         }
     }
 }
@@ -266,6 +297,11 @@ fun NavHostController.navigateToRecurring() {
 /** Pushes the "Manage data" screen (CSV export, backup / restore) on top of the current tab. */
 fun NavHostController.navigateToData() {
     navigate(DATA_ROUTE) { launchSingleTop = true }
+}
+
+/** Pushes the "Insights" charts screen on top of the current tab. */
+fun NavHostController.navigateToInsights() {
+    navigate(INSIGHTS_ROUTE) { launchSingleTop = true }
 }
 
 private fun NavHostController.navigateToTopLevel(destination: TopLevelDestination) {
