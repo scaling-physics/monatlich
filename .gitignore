@@ -6,6 +6,12 @@ build/
 
 # Android
 local.properties
+
+# Release signing — never commit these
+keystore.properties
+keystore/
+*.jks
+*.keystore
 *.apk
 *.aab
 *.ap_
