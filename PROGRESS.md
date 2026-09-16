@@ -76,3 +76,16 @@ Legend: ⬜ not started · 🔄 in progress · ✅ done
   the emulator: Insights donut/trend match Overview's totals; widget pinned to the home screen
   renders live data and its "+" opens the add sheet with the keyboard ready. 158 unit + 29
   instrumented tests green, lint clean.
+- 2026-09-16 — **Biometric / PIN app lock.** A 4-digit PIN (salted SHA-256, never the raw PIN) gates
+  the app on cold start and on returning from the background; a new "App lock" screen under Settings
+  sets/changes/removes the PIN and toggles lock and biometric unlock independently. `MainActivity`
+  became a `FragmentActivity` (required by `androidx.biometric.BiometricPrompt`) and now hosts the
+  lock gate ahead of `MonatlichAppShell`; a `ProcessLifecycleOwner` observer re-locks the app after
+  30s+ in the background, with a grace window so a quick trip through the CSV/backup file picker
+  doesn't force a re-unlock. Caught and fixed a real bug along the way: the lock ViewModel is
+  Activity-scoped and outlives any one lock-screen showing, so modeling "unlocked" as a persistent
+  boolean in its `uiState` went stale — the next time the screen had to show again, it would
+  immediately auto-dismiss itself. Fixed by making the unlock a one-shot `SharedFlow` event instead
+  (regression test added). Manually verified end-to-end on the emulator: set PIN → lock auto-enables
+  → wrong PIN rejected → correct PIN unlocks → quick background/foreground doesn't re-lock →
+  30s+ background does. 174 unit + 29 instrumented tests green, lint clean.

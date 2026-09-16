@@ -32,6 +32,7 @@ import androidx.compose.material.icons.outlined.Category
 import androidx.compose.material.icons.outlined.CurrencyExchange
 import androidx.compose.material.icons.outlined.ImportExport
 import androidx.compose.material.icons.outlined.Payments
+import androidx.compose.material.icons.outlined.Shield
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -79,6 +80,7 @@ const val MANAGE_CATEGORIES_TAG = "settings_manage_categories"
 const val MANAGE_RECURRING_TAG = "settings_manage_recurring"
 const val MANAGE_DATA_TAG = "settings_manage_data"
 const val OPEN_INSIGHTS_TAG = "settings_open_insights"
+const val OPEN_SECURITY_TAG = "settings_open_security"
 
 /** Test tag of the exchange-rate row for [code], e.g. `settings_rate_USD`. */
 fun rateRowTag(code: String): String = "settings_rate_$code"
@@ -93,6 +95,7 @@ fun SettingsRoute(
     onManageRecurring: () -> Unit,
     onManageData: () -> Unit,
     onOpenInsights: () -> Unit,
+    onOpenSecurity: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: SettingsViewModel = hiltViewModel(),
 ) {
@@ -104,6 +107,7 @@ fun SettingsRoute(
         onManageRecurring = onManageRecurring,
         onManageData = onManageData,
         onOpenInsights = onOpenInsights,
+        onOpenSecurity = onOpenSecurity,
         modifier = modifier,
     )
 }
@@ -117,6 +121,7 @@ fun SettingsScreen(
     onManageRecurring: () -> Unit,
     onManageData: () -> Unit,
     onOpenInsights: () -> Unit,
+    onOpenSecurity: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Scaffold(
@@ -199,6 +204,17 @@ fun SettingsScreen(
                     subtitle = stringResource(R.string.settings_recurring_subtitle),
                     onClick = onManageRecurring,
                     modifier = Modifier.testTag(MANAGE_RECURRING_TAG),
+                )
+            }
+
+            item(key = "security-header") { SectionHeader("Security") }
+            item(key = "open-security") {
+                SettingsRow(
+                    icon = { Icon(Icons.Outlined.Shield, contentDescription = null) },
+                    title = "App lock",
+                    subtitle = "Require a PIN or biometric to open monatlich",
+                    onClick = onOpenSecurity,
+                    modifier = Modifier.testTag(OPEN_SECURITY_TAG),
                 )
             }
 
@@ -473,6 +489,7 @@ private fun SettingsScreenPreview() {
             onManageRecurring = {},
             onManageData = {},
             onOpenInsights = {},
+            onOpenSecurity = {},
         )
     }
 }

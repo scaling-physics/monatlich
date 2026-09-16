@@ -50,6 +50,7 @@ import com.monatlich.ui.budget.SetBudgetSheet
 import com.monatlich.ui.data.DataRoute
 import com.monatlich.ui.insights.InsightsRoute
 import com.monatlich.ui.overview.OverviewRoute
+import com.monatlich.ui.security.SecuritySettingsRoute
 import com.monatlich.ui.recurring.RecurringRoute
 import com.monatlich.ui.settings.SettingsRoute
 import com.monatlich.ui.transactions.TransactionEditorSheet
@@ -68,6 +69,9 @@ const val DATA_ROUTE = "data"
 
 /** Non-top-level drill-down from Settings: spend-by-category and month-over-month charts. Reach via [navigateToInsights]. */
 const val INSIGHTS_ROUTE = "insights"
+
+/** Non-top-level drill-down from Settings: PIN / biometric app lock. Reach via [navigateToSecurity]. */
+const val SECURITY_ROUTE = "security"
 
 /**
  * The three top-level destinations. String routes for now; switch to `@Serializable` objects
@@ -209,6 +213,7 @@ private fun MonatlichNavHost(
                 onManageRecurring = { navController.navigateToRecurring() },
                 onManageData = { navController.navigateToData() },
                 onOpenInsights = { navController.navigateToInsights() },
+                onOpenSecurity = { navController.navigateToSecurity() },
             )
         }
         composable(
@@ -246,6 +251,15 @@ private fun MonatlichNavHost(
             popExitTransition = { sharedAxisVerticalExit(motion) },
         ) {
             InsightsRoute(onBack = { navController.popBackStack() })
+        }
+        composable(
+            route = SECURITY_ROUTE,
+            enterTransition = { sharedAxisVerticalEnter(motion) },
+            exitTransition = { fadeThroughExit(motion) },
+            popEnterTransition = { fadeThroughEnter(motion) },
+            popExitTransition = { sharedAxisVerticalExit(motion) },
+        ) {
+            SecuritySettingsRoute(onBack = { navController.popBackStack() })
         }
     }
 }
@@ -302,6 +316,11 @@ fun NavHostController.navigateToData() {
 /** Pushes the "Insights" charts screen on top of the current tab. */
 fun NavHostController.navigateToInsights() {
     navigate(INSIGHTS_ROUTE) { launchSingleTop = true }
+}
+
+/** Pushes the "App lock" security settings screen on top of the current tab. */
+fun NavHostController.navigateToSecurity() {
+    navigate(SECURITY_ROUTE) { launchSingleTop = true }
 }
 
 private fun NavHostController.navigateToTopLevel(destination: TopLevelDestination) {

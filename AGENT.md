@@ -50,7 +50,7 @@ Personal tool first; structure kept clean enough for a future Play Store release
 - [ ] Unspent-budget rollover into next month (per-category opt-in)
 - [ ] Opt-in live exchange rate fetch
 - [ ] Add more currencies beyond USD / EUR / INR
-- [ ] Biometric / PIN app lock
+- [x] Biometric / PIN app lock
 - [ ] Localization: English + German
 - [ ] Play Store prep: onboarding, privacy policy, accessibility pass
 

@@ -12,6 +12,7 @@ import com.monatlich.domain.repository.BudgetRepository
 import com.monatlich.domain.repository.CategoryRepository
 import com.monatlich.domain.repository.ExchangeRateRepository
 import com.monatlich.domain.repository.RecurringRepository
+import com.monatlich.domain.repository.SecurityRepository
 import com.monatlich.domain.repository.SettingsRepository
 import com.monatlich.domain.repository.TransactionRepository
 import kotlinx.coroutines.flow.Flow
@@ -164,4 +165,35 @@ class FakeSettingsRepository(initial: Currency = Currency.EUR) : SettingsReposit
     val state = MutableStateFlow(initial)
     override val baseCurrency: Flow<Currency> = state
     override suspend fun setBaseCurrency(currency: Currency) { state.value = currency }
+}
+
+class FakeSecurityRepository(
+    private var storedPin: String? = null,
+    lockEnabled: Boolean = false,
+    biometricEnabled: Boolean = false,
+) : SecurityRepository {
+    private val lockEnabledState = MutableStateFlow(lockEnabled)
+    private val biometricEnabledState = MutableStateFlow(biometricEnabled)
+    private val hasPinState = MutableStateFlow(storedPin != null)
+
+    override val isLockEnabled: Flow<Boolean> = lockEnabledState
+    override val isBiometricEnabled: Flow<Boolean> = biometricEnabledState
+    override val hasPin: Flow<Boolean> = hasPinState
+
+    override suspend fun setPin(pin: String) {
+        storedPin = pin
+        hasPinState.value = true
+    }
+
+    override suspend fun verifyPin(pin: String): Boolean = storedPin != null && storedPin == pin
+
+    override suspend fun clearPin() {
+        storedPin = null
+        hasPinState.value = false
+        lockEnabledState.value = false
+        biometricEnabledState.value = false
+    }
+
+    override suspend fun setLockEnabled(enabled: Boolean) { lockEnabledState.value = enabled }
+    override suspend fun setBiometricEnabled(enabled: Boolean) { biometricEnabledState.value = enabled }
 }
