@@ -56,6 +56,7 @@ class FakeBudgetRepository(initial: List<Budget> = emptyList()) : BudgetReposito
     private var nextId = (initial.maxOfOrNull { it.id } ?: 0L) + 1
 
     override fun observeForMonth(month: YearMonth): Flow<List<Budget>> = state.map { list -> list.filter { it.month == month } }
+    override fun observeAll(): Flow<List<Budget>> = state.map { list -> list.sortedBy { it.month } }
     override fun observe(categoryId: Long, month: YearMonth): Flow<Budget?> = state.map { list -> list.firstOrNull { it.categoryId == categoryId && it.month == month } }
     override suspend fun get(categoryId: Long, month: YearMonth): Budget? = state.value.firstOrNull { it.categoryId == categoryId && it.month == month }
 
@@ -119,6 +120,23 @@ class FakeTransactionRepository(initial: List<Transaction> = emptyList()) : Tran
                 }
                 .groupBy({ it.first }, { it.second })
                 .mapValues { (_, amounts) -> amounts.reduce { a, b -> a + b } }
+        }
+
+    override fun observeAllTotalsByCategoryAndMonthInBase(type: TransactionType, base: Currency): Flow<Map<Long, Map<YearMonth, Money>>> =
+        state.map { list ->
+            list.filter { it.type == type }
+                .groupBy { Triple(it.categoryId, it.month, Pair(it.amount.currency, it.rateToBase)) }
+                .map { (key, group) ->
+                    val (categoryId, month, currencyAndRate) = key
+                    val (currency, rate) = currencyAndRate
+                    val sum = Money(group.sumOf { it.amount.amountMinor }, currency)
+                    Triple(categoryId, month, if (currency == base) sum else sum.convertTo(base, rate))
+                }
+                .groupBy({ it.first }, { it.second to it.third })
+                .mapValues { (_, monthAmounts) ->
+                    monthAmounts.groupBy({ it.first }, { it.second })
+                        .mapValues { (_, amounts) -> amounts.reduce { a, b -> a + b } }
+                }
         }
 }
 

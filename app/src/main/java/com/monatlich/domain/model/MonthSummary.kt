@@ -13,8 +13,14 @@ data class CategorySummary(
     val budget: Money?,
     val spentInBase: Money,
     val remainingInBase: Money?,
+    /**
+     * Prior months' unspent budget (or overspend, if negative) rolled into this one — zero unless
+     * [Category.rolloverEnabled] is on. Already folded into [remainingInBase] and [budgetInBase];
+     * exposed on its own so the UI can show "+ €40 carried over" alongside this month's own budget.
+     */
+    val carriedInBase: Money,
 ) {
-    /** The budget converted to the base currency, or `null` when there is no budget. */
+    /** This month's budget plus any carry-in, converted to the base currency; `null` with neither. */
     val budgetInBase: Money? get() = remainingInBase?.let { it + spentInBase }
 
     val isOverBudget: Boolean get() = remainingInBase?.isNegative == true

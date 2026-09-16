@@ -8,6 +8,9 @@ import java.time.YearMonth
 interface BudgetRepository {
     fun observeForMonth(month: YearMonth): Flow<List<Budget>>
 
+    /** Every budget ever set, any month; backs rollover, which sums a category's whole history. */
+    fun observeAll(): Flow<List<Budget>>
+
     fun observe(categoryId: Long, month: YearMonth): Flow<Budget?>
 
     suspend fun get(categoryId: Long, month: YearMonth): Budget?

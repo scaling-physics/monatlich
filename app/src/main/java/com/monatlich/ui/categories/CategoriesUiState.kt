@@ -24,6 +24,7 @@ data class CategoryEditorState(
     val name: String = "",
     val icon: String = CategoryIconNames.DEFAULT,
     val color: Long = CategoryColors.DEFAULT,
+    val rolloverEnabled: Boolean = false,
     val nameError: NameError? = null,
 ) {
     val isNew: Boolean get() = id == null
@@ -39,6 +40,7 @@ sealed interface CategoriesEvent {
     data class NameChanged(val name: String) : CategoriesEvent
     data class IconSelected(val icon: String) : CategoriesEvent
     data class ColorSelected(val color: Long) : CategoriesEvent
+    data class RolloverToggled(val enabled: Boolean) : CategoriesEvent
     data object SaveClicked : CategoriesEvent
     data class Archive(val id: Long) : CategoriesEvent
     data class Restore(val id: Long) : CategoriesEvent

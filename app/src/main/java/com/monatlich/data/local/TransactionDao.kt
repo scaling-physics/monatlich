@@ -57,4 +57,16 @@ interface TransactionDao {
             "ORDER BY categoryId, currencyCode, rateToBase",
     )
     fun observeTotalsByCategory(month: YearMonth, type: TransactionType): Flow<List<CategoryTotalRow>>
+
+    /**
+     * The same grouping as [observeTotalsByCategory], but every month at once — backs budget
+     * rollover, which sums a rollover-enabled category's whole history rather than one month.
+     */
+    @Query(
+        "SELECT categoryId, month, currencyCode, rateToBase, SUM(amountMinor) AS totalMinor " +
+            "FROM transactions WHERE type = :type " +
+            "GROUP BY categoryId, month, currencyCode, rateToBase " +
+            "ORDER BY categoryId, month",
+    )
+    fun observeAllTotalsByCategoryAndMonth(type: TransactionType): Flow<List<CategoryMonthTotalRow>>
 }

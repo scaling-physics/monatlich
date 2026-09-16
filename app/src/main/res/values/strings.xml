@@ -23,6 +23,8 @@
     <string name="categories_name_label">Name</string>
     <string name="categories_icon_label">Icon</string>
     <string name="categories_color_label">Color</string>
+    <string name="categories_rollover_label">Roll over unspent budget</string>
+    <string name="categories_rollover_description">Unspent budget (or an overspend) carries into next month, building up a running balance instead of resetting</string>
     <string name="categories_save">Save</string>
     <string name="categories_cancel">Cancel</string>
     <string name="categories_error_blank">Enter a name</string>

@@ -13,4 +13,10 @@ data class Category(
     val color: Long,
     val sortOrder: Int = 0,
     val archived: Boolean = false,
+    /**
+     * When true, [GetMonthSummary] carries this category's unspent budget (or overspend) from
+     * every prior month into the current one — a running balance for saving toward something
+     * across months (a trip, a big purchase) rather than a fresh allowance each month.
+     */
+    val rolloverEnabled: Boolean = false,
 )

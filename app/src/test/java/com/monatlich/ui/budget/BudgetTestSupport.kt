@@ -70,6 +70,8 @@ class BudgetFakeBudgetRepository(initial: List<Budget> = emptyList()) : BudgetRe
     override fun observeForMonth(month: YearMonth): Flow<List<Budget>> =
         state.map { list -> list.filter { it.month == month } }
 
+    override fun observeAll(): Flow<List<Budget>> = state.map { list -> list.sortedBy { it.month } }
+
     override fun observe(categoryId: Long, month: YearMonth): Flow<Budget?> =
         state.map { list -> list.firstOrNull { it.categoryId == categoryId && it.month == month } }
 

@@ -14,6 +14,10 @@ interface BudgetDao {
     @Query("SELECT * FROM budgets WHERE month = :month ORDER BY id")
     fun observeForMonth(month: YearMonth): Flow<List<BudgetEntity>>
 
+    /** Every budget ever set, any month; backs rollover, which sums a category's whole history. */
+    @Query("SELECT * FROM budgets ORDER BY month")
+    fun observeAll(): Flow<List<BudgetEntity>>
+
     @Query("SELECT * FROM budgets WHERE month = :month ORDER BY id")
     suspend fun getForMonth(month: YearMonth): List<BudgetEntity>
 

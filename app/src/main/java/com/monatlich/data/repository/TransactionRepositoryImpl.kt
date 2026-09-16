@@ -56,4 +56,20 @@ class TransactionRepositoryImpl @Inject constructor(
             }
             totals
         }
+
+    override fun observeAllTotalsByCategoryAndMonthInBase(
+        type: TransactionType,
+        base: Currency,
+    ): Flow<Map<Long, Map<YearMonth, Money>>> =
+        dao.observeAllTotalsByCategoryAndMonth(type).map { rows ->
+            val totals = LinkedHashMap<Long, LinkedHashMap<YearMonth, Money>>()
+            rows.forEach { row ->
+                val currency = Currency.fromCode(row.currencyCode)
+                val amount = Money(row.totalMinor, currency)
+                val inBase = if (currency == base) amount else amount.convertTo(base, row.rateToBase)
+                val byMonth = totals.getOrPut(row.categoryId) { LinkedHashMap() }
+                byMonth[row.month] = byMonth[row.month]?.plus(inBase) ?: inBase
+            }
+            totals
+        }
 }

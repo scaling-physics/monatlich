@@ -23,6 +23,7 @@ private class FakeBudgetDao : BudgetDao {
     private var nextId = 1L
 
     override fun observeForMonth(month: YearMonth): Flow<List<BudgetEntity>> = rows.map { list -> list.filter { it.month == month } }
+    override fun observeAll(): Flow<List<BudgetEntity>> = rows.map { list -> list.sortedBy { it.month } }
     override suspend fun getForMonth(month: YearMonth): List<BudgetEntity> = rows.value.filter { it.month == month }
     override fun observe(categoryId: Long, month: YearMonth): Flow<BudgetEntity?> =
         rows.map { list -> list.firstOrNull { it.categoryId == categoryId && it.month == month } }

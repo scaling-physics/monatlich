@@ -44,16 +44,16 @@ class TransactionTest {
         val category = Category(id = 1, name = "Groceries", icon = "ShoppingCart", color = 0xFF2E7D32)
         val eur = Currency.EUR
 
-        val onTrack = CategorySummary(category, Money(40000, eur), Money(10000, eur), Money(30000, eur))
+        val onTrack = CategorySummary(category, Money(40000, eur), Money(10000, eur), Money(30000, eur), Money.zero(eur))
         assertEquals(Money(40000, eur), onTrack.budgetInBase)
         assertEquals(0.25f, onTrack.progress)
         assertEquals(false, onTrack.isOverBudget)
 
-        val over = CategorySummary(category, Money(10000, eur), Money(15000, eur), Money(-5000, eur))
+        val over = CategorySummary(category, Money(10000, eur), Money(15000, eur), Money(-5000, eur), Money.zero(eur))
         assertEquals(1f, over.progress)
         assertEquals(true, over.isOverBudget)
 
-        val unbudgeted = CategorySummary(category, null, Money(15000, eur), null)
+        val unbudgeted = CategorySummary(category, null, Money(15000, eur), null, Money.zero(eur))
         assertEquals(null, unbudgeted.budgetInBase)
         assertEquals(0f, unbudgeted.progress)
         assertEquals(false, unbudgeted.isOverBudget)

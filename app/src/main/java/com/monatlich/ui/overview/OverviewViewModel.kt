@@ -102,6 +102,7 @@ class OverviewViewModel @Inject internal constructor(
                 spentMinor = row.spentInBase.amountMinor,
                 budgetMinor = row.budgetInBase?.amountMinor ?: 0L,
                 hasBudget = row.budgetInBase != null,
+                carriedMinor = row.carriedInBase.amountMinor,
             )
         }
         return OverviewUiState(

@@ -98,6 +98,20 @@ class MigrationTest {
         assertTrue(migrated.recurringTransactionDao().observeAll().first().isEmpty())
     }
 
+    @Test
+    fun migrate2To3_addsRolloverColumnDefaultingFalse() = runBlocking {
+        createVersion1Database()
+        val migrated = openWithMigrations()
+
+        val categories = migrated.categoryDao().observeAll().first()
+        assertTrue(categories.all { !it.rolloverEnabled })
+
+        val groceriesId = categories.first { it.name == "Groceries" }.id
+        val groceries = migrated.categoryDao().getById(groceriesId)!!
+        migrated.categoryDao().update(groceries.copy(rolloverEnabled = true))
+        assertTrue(migrated.categoryDao().getById(groceriesId)!!.rolloverEnabled)
+    }
+
     // ---- helpers -----------------------------------------------------------------------------
 
     /** The v1 schema verbatim from `1.json`, plus a few rows and `user_version = 1`. */

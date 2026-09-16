@@ -165,6 +165,32 @@ class CategoriesViewModelTest {
     }
 
     @Test
+    fun `rollover toggle is off by default and persists when saved on`() = runTest {
+        viewModel.onEvent(CategoriesEvent.NewCategoryClicked)
+        assertFalse(checkNotNull(state.editor).rolloverEnabled)
+
+        viewModel.onEvent(CategoriesEvent.NameChanged("Travel"))
+        viewModel.onEvent(CategoriesEvent.RolloverToggled(true))
+        assertTrue(state.editor!!.rolloverEnabled)
+        viewModel.onEvent(CategoriesEvent.SaveClicked)
+
+        assertTrue(repository.sorted.last().rolloverEnabled)
+    }
+
+    @Test
+    fun `editing an existing category loads its current rollover setting`() = runTest {
+        repository.update(repository.get(2)!!.copy(rolloverEnabled = true))
+
+        viewModel.onEvent(CategoriesEvent.CategoryClicked(2))
+        assertTrue(checkNotNull(state.editor).rolloverEnabled)
+
+        viewModel.onEvent(CategoriesEvent.RolloverToggled(false))
+        viewModel.onEvent(CategoriesEvent.SaveClicked)
+
+        assertFalse(repository.get(2)!!.rolloverEnabled)
+    }
+
+    @Test
     fun `dismissing the sheet discards the draft`() = runTest {
         viewModel.onEvent(CategoriesEvent.NewCategoryClicked)
         viewModel.onEvent(CategoriesEvent.NameChanged("Draft"))

@@ -17,6 +17,9 @@ class BudgetRepositoryImpl @Inject constructor(
     override fun observeForMonth(month: YearMonth): Flow<List<Budget>> =
         dao.observeForMonth(month).map { list -> list.map { it.toDomain() } }
 
+    override fun observeAll(): Flow<List<Budget>> =
+        dao.observeAll().map { list -> list.map { it.toDomain() } }
+
     override fun observe(categoryId: Long, month: YearMonth): Flow<Budget?> =
         dao.observe(categoryId, month).map { it?.toDomain() }
 

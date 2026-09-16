@@ -1,6 +1,7 @@
 package com.monatlich.data.repository
 
 import app.cash.turbine.test
+import com.monatlich.data.local.CategoryMonthTotalRow
 import com.monatlich.data.local.CategoryTotalRow
 import com.monatlich.data.local.TransactionDao
 import com.monatlich.data.local.TransactionEntity
@@ -62,6 +63,24 @@ private class FakeTransactionDao : TransactionDao {
                 .groupBy { Triple(it.categoryId, it.currencyCode, it.rateToBase) }
                 .map { (key, group) -> CategoryTotalRow(key.first, key.second, key.third, group.sumOf { it.amountMinor }) }
                 .sortedWith(compareBy({ it.categoryId }, { it.currencyCode }, { it.rateToBase }))
+        }
+
+    private data class MonthGroupKey(val categoryId: Long, val month: YearMonth, val currencyCode: String, val rateToBase: BigDecimal)
+
+    override fun observeAllTotalsByCategoryAndMonth(type: TransactionType): Flow<List<CategoryMonthTotalRow>> =
+        rows.map { list ->
+            list.filter { it.type == type }
+                .groupBy { MonthGroupKey(it.categoryId, it.month, it.currencyCode, it.rateToBase) }
+                .map { (key, group) ->
+                    CategoryMonthTotalRow(
+                        categoryId = key.categoryId,
+                        month = key.month,
+                        currencyCode = key.currencyCode,
+                        rateToBase = key.rateToBase,
+                        totalMinor = group.sumOf { it.amountMinor },
+                    )
+                }
+                .sortedWith(compareBy({ it.categoryId }, { it.month }))
         }
 }
 

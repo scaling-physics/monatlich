@@ -89,3 +89,18 @@ Legend: ⬜ not started · 🔄 in progress · ✅ done
   (regression test added). Manually verified end-to-end on the emulator: set PIN → lock auto-enables
   → wrong PIN rejected → correct PIN unlocks → quick background/foreground doesn't re-lock →
   30s+ background does. 174 unit + 29 instrumented tests green, lint clean.
+- 2026-09-16 — **Unspent-budget rollover (cumulative saving across months).** Categories get a new
+  opt-in "Roll over unspent budget" toggle (`rolloverEnabled`, Room migration 2→3); when on, a
+  category's unspent budget — or overspend, carried as a negative balance — accumulates across
+  every prior month rather than resetting, so a "Travel" category can build up savings for months
+  before a big trip. `GetMonthSummary` now also pulls every category's full budget/spend history
+  (`observeAllTotalsByCategoryAndMonthInBase`) to fold into a running `carryInBase` per category,
+  added on top of that month's own budget; Overview's category rows show a "+X rolled over" /
+  "-X rolled over (overspent)" caption under the progress bar. Caught and fixed a real bug before
+  it shipped: `Seed.kt`'s raw-SQL seed insert (used only on first database creation, so it bypasses
+  the normal `@Insert` path and its Kotlin-side defaults) didn't set the new NOT NULL
+  `rolloverEnabled` column, which would have crashed every fresh install; found via instrumented
+  test failures, fixed, reverified. Manually verified end-to-end on the emulator: enabled rollover
+  on Groceries, set an August budget of 100 with a 30 expense, then confirmed September (with no
+  budget set) showed 70 available with a "+70,00 € rolled over" caption. 184 unit + 30 instrumented
+  tests green, lint clean.

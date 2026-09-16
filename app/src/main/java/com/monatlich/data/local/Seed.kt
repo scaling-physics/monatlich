@@ -36,8 +36,8 @@ class SeedCallback(private val now: () -> Instant = Instant::now) : RoomDatabase
         val converters = Converters()
         Seed.categories.forEach { c ->
             db.execSQL(
-                "INSERT INTO ${CategoryEntity.TABLE} (name, icon, color, sortOrder, archived) VALUES (?, ?, ?, ?, ?)",
-                arrayOf<Any?>(c.name, c.icon, c.color, c.sortOrder, if (c.archived) 1 else 0),
+                "INSERT INTO ${CategoryEntity.TABLE} (name, icon, color, sortOrder, archived, rolloverEnabled) VALUES (?, ?, ?, ?, ?, ?)",
+                arrayOf<Any?>(c.name, c.icon, c.color, c.sortOrder, if (c.archived) 1 else 0, if (c.rolloverEnabled) 1 else 0),
             )
         }
         Seed.exchangeRates(now()).forEach { r ->

@@ -20,6 +20,7 @@ internal fun CategoryEntity.toDomain() = Category(
     color = color,
     sortOrder = sortOrder,
     archived = archived,
+    rolloverEnabled = rolloverEnabled,
 )
 
 internal fun Category.toEntity() = CategoryEntity(
@@ -29,6 +30,7 @@ internal fun Category.toEntity() = CategoryEntity(
     color = color,
     sortOrder = sortOrder,
     archived = archived,
+    rolloverEnabled = rolloverEnabled,
 )
 
 internal fun BudgetEntity.toDomain() = Budget(

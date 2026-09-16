@@ -57,6 +57,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.SwipeToDismissBox
 import androidx.compose.material3.SwipeToDismissBoxValue
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
@@ -111,6 +112,7 @@ const val NEW_CATEGORY_FAB_TAG = "new_category_fab"
 const val CATEGORY_SHEET_TAG = "category_sheet"
 const val CATEGORY_NAME_FIELD_TAG = "category_name_field"
 const val CATEGORY_SAVE_TAG = "category_save"
+const val CATEGORY_ROLLOVER_TOGGLE_TAG = "category_rollover_toggle"
 
 /** Test tag of the row for the category with [id]. */
 fun categoryRowTag(id: Long): String = "category_row_$id"
@@ -565,6 +567,12 @@ private fun CategoryEditorSheet(
 
             SectionLabel(stringResource(R.string.categories_color_label))
             ColorPicker(selected = editor.color, onSelect = { onEvent(CategoriesEvent.ColorSelected(it)) })
+            Spacer(Modifier.height(20.dp))
+
+            RolloverToggleRow(
+                checked = editor.rolloverEnabled,
+                onCheckedChange = { onEvent(CategoriesEvent.RolloverToggled(it)) },
+            )
             Spacer(Modifier.height(24.dp))
 
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
@@ -584,6 +592,30 @@ private fun CategoryEditorSheet(
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun RolloverToggleRow(
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Row(modifier = modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(stringResource(R.string.categories_rollover_label), style = MaterialTheme.typography.bodyLarge)
+            Text(
+                text = stringResource(R.string.categories_rollover_description),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        Spacer(Modifier.width(12.dp))
+        Switch(
+            checked = checked,
+            onCheckedChange = onCheckedChange,
+            modifier = Modifier.testTag(CATEGORY_ROLLOVER_TOGGLE_TAG),
+        )
     }
 }
 

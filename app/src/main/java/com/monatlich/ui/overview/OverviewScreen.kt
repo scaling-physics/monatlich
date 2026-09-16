@@ -550,6 +550,15 @@ private fun CategoryRow(
                 ),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+            if (row.carriedMinor != 0L) {
+                val carried = Money(abs(row.carriedMinor), currency).format()
+                Text(
+                    text = if (row.carriedMinor > 0L) "+$carried rolled over" else "-$carried rolled over (overspent)",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = if (row.carriedMinor > 0L) budgetColors.onTrack else MaterialTheme.colorScheme.error,
+                    modifier = Modifier.padding(top = 2.dp),
+                )
+            }
         }
     }
 }

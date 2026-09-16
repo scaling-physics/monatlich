@@ -43,9 +43,11 @@ data class CategoryRowUiState(
     /** ARGB colour; resolve with `categoryColor()`. */
     val color: Long,
     val spentMinor: Long,
-    /** Budget in the base currency; `0` when [hasBudget] is `false`. */
+    /** Budget in the base currency; `0` when [hasBudget] is `false`. Already includes [carriedMinor]. */
     val budgetMinor: Long,
     val hasBudget: Boolean,
+    /** Prior months' unspent budget (or overspend, if negative) rolled in; `0` unless enabled. */
+    val carriedMinor: Long = 0L,
 ) {
     val remainingMinor: Long get() = budgetMinor - spentMinor
     val progress: Float get() = if (hasBudget) progressOf(spentMinor, budgetMinor) else 0f

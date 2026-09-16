@@ -48,6 +48,7 @@ class CategoriesViewModel @Inject constructor(
             is CategoriesEvent.NameChanged -> updateEditor { it.copy(name = event.name, nameError = null) }
             is CategoriesEvent.IconSelected -> updateEditor { it.copy(icon = event.icon) }
             is CategoriesEvent.ColorSelected -> updateEditor { it.copy(color = event.color) }
+            is CategoriesEvent.RolloverToggled -> updateEditor { it.copy(rolloverEnabled = event.enabled) }
             CategoriesEvent.SaveClicked -> save()
             is CategoriesEvent.Archive -> setArchived(event.id, archived = true)
             is CategoriesEvent.Restore -> setArchived(event.id, archived = false)
@@ -68,6 +69,7 @@ class CategoriesViewModel @Inject constructor(
                 name = category.name,
                 icon = category.icon,
                 color = category.color,
+                rolloverEnabled = category.rolloverEnabled,
             ),
         )
     }
@@ -91,10 +93,14 @@ class CategoriesViewModel @Inject constructor(
         }
         viewModelScope.launch {
             if (editor.id == null) {
-                repository.add(Category(name = name, icon = editor.icon, color = editor.color))
+                repository.add(
+                    Category(name = name, icon = editor.icon, color = editor.color, rolloverEnabled = editor.rolloverEnabled),
+                )
             } else {
                 val existing = repository.get(editor.id) ?: return@launch
-                repository.update(existing.copy(name = name, icon = editor.icon, color = editor.color))
+                repository.update(
+                    existing.copy(name = name, icon = editor.icon, color = editor.color, rolloverEnabled = editor.rolloverEnabled),
+                )
             }
             _uiState.update { it.copy(editor = null) }
         }

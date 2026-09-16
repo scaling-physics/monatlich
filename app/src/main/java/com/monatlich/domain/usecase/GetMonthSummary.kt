@@ -31,6 +31,9 @@ import javax.inject.Inject
  *   plan, not history). A missing rate row is treated as `1`, matching the seeded placeholder.
  * - A category appears if it is active, or if it is archived but still has a budget or spending in
  *   this month; rows follow the category sort order.
+ * - A [Category.rolloverEnabled] category's available budget also includes every prior month's
+ *   unspent budget (or overspend, if negative) — a running balance, not just this month's own
+ *   allowance. See [carryInBase].
  * - Emissions are de-duplicated: one write can invalidate several source queries at once.
  */
 class GetMonthSummary @Inject constructor(
@@ -43,53 +46,100 @@ class GetMonthSummary @Inject constructor(
     @OptIn(ExperimentalCoroutinesApi::class)
     operator fun invoke(month: YearMonth): Flow<MonthSummary> =
         settings.baseCurrency.flatMapLatest { base ->
-            combine(
+            val monthData = combine(
                 categories.observeAll(),
                 budgets.observeForMonth(month),
                 exchangeRates.observeAll(),
                 transactions.observeTotalsByCategoryInBase(month, TransactionType.EXPENSE, base),
                 transactions.observeTotalsByCategoryInBase(month, TransactionType.INCOME, base),
             ) { allCategories, monthBudgets, rates, spent, income ->
-                build(month, base, allCategories, monthBudgets, rates, spent, income)
+                MonthData(allCategories, monthBudgets, rates, spent, income)
             }
+            val rolloverData = combine(
+                budgets.observeAll(),
+                transactions.observeAllTotalsByCategoryAndMonthInBase(TransactionType.EXPENSE, base),
+            ) { allBudgets, allSpent -> RolloverData(allBudgets, allSpent) }
+
+            monthData.combine(rolloverData) { data, rollover -> build(month, base, data, rollover) }
         }.distinctUntilChanged()
 
-    private fun build(
-        month: YearMonth,
-        base: Currency,
-        allCategories: List<Category>,
-        monthBudgets: List<Budget>,
-        rates: List<ExchangeRate>,
-        spentByCategory: Map<Long, Money>,
-        incomeByCategory: Map<Long, Money>,
-    ): MonthSummary {
-        val budgetByCategory = monthBudgets.associateBy { it.categoryId }
-        val rateByCurrency = rates.associate { it.currency to it.rateToBase }
+    private fun build(month: YearMonth, base: Currency, data: MonthData, rollover: RolloverData): MonthSummary {
+        val budgetByCategory = data.monthBudgets.associateBy { it.categoryId }
+        val rateByCurrency = data.rates.associate { it.currency to it.rateToBase }
 
-        val rows = allCategories.mapNotNull { category ->
+        val rows = data.allCategories.mapNotNull { category ->
             val budget = budgetByCategory[category.id]?.amount
-            val spentInBase = spentByCategory[category.id]
+            val spentInBase = data.spentByCategory[category.id]
             if (category.archived && budget == null && spentInBase == null) return@mapNotNull null
 
             val spent = spentInBase ?: Money.zero(base)
-            val budgetInBase = budget?.toBase(base, rateByCurrency)
+            val budgetInBaseThisMonth = budget?.toBase(base, rateByCurrency)
+            val carry = if (category.rolloverEnabled) {
+                carryInBase(category.id, month, base, rollover, rateByCurrency)
+            } else {
+                Money.zero(base)
+            }
+            val hasAvailable = budgetInBaseThisMonth != null || !carry.isZero
+            val availableInBase = (budgetInBaseThisMonth ?: Money.zero(base)) + carry
+
             CategorySummary(
                 category = category,
                 budget = budget,
                 spentInBase = spent,
-                remainingInBase = budgetInBase?.let { it - spent },
+                remainingInBase = if (hasAvailable) availableInBase - spent else null,
+                carriedInBase = carry,
             )
         }
 
         return MonthSummary(
             month = month,
             totalBudgetInBase = rows.mapNotNull { it.budgetInBase }.sumIn(base),
-            totalSpentInBase = spentByCategory.values.sumIn(base),
-            totalIncomeInBase = incomeByCategory.values.sumIn(base),
+            totalSpentInBase = data.spentByCategory.values.sumIn(base),
+            totalIncomeInBase = data.incomeByCategory.values.sumIn(base),
             categories = rows,
         )
     }
 
+    /**
+     * Sums (budget − spent) in [base] over every month strictly before [beforeMonth] for
+     * [categoryId] — the running balance that a rollover category carries into [beforeMonth].
+     * Unbounded by design: once rollover is on, the whole history counts, not just since it was
+     * switched on (nothing records *when* that happened).
+     */
+    private fun carryInBase(
+        categoryId: Long,
+        beforeMonth: YearMonth,
+        base: Currency,
+        rollover: RolloverData,
+        rateByCurrency: Map<Currency, BigDecimal>,
+    ): Money {
+        val budgetsByMonth = rollover.allBudgets
+            .filter { it.categoryId == categoryId && it.month < beforeMonth }
+            .associate { it.month to it.amount.toBase(base, rateByCurrency) }
+        val spentByMonth = rollover.allSpentByCategoryAndMonth[categoryId]
+            .orEmpty()
+            .filterKeys { it < beforeMonth }
+
+        return (budgetsByMonth.keys + spentByMonth.keys).fold(Money.zero(base)) { total, month ->
+            val budgetInBase = budgetsByMonth[month] ?: Money.zero(base)
+            val spentInBase = spentByMonth[month] ?: Money.zero(base)
+            total + (budgetInBase - spentInBase)
+        }
+    }
+
     private fun Money.toBase(base: Currency, rateByCurrency: Map<Currency, BigDecimal>): Money =
         if (currency == base) this else convertTo(base, rateByCurrency[currency] ?: BigDecimal.ONE)
+
+    private data class MonthData(
+        val allCategories: List<Category>,
+        val monthBudgets: List<Budget>,
+        val rates: List<ExchangeRate>,
+        val spentByCategory: Map<Long, Money>,
+        val incomeByCategory: Map<Long, Money>,
+    )
+
+    private data class RolloverData(
+        val allBudgets: List<Budget>,
+        val allSpentByCategoryAndMonth: Map<Long, Map<YearMonth, Money>>,
+    )
 }

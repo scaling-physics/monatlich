@@ -18,6 +18,8 @@ data class CategoryEntity(
     val color: Long,
     val sortOrder: Int,
     val archived: Boolean = false,
+    /** When true, unspent budget (or an overspend) carries into the next month. See [Migrations]. */
+    val rolloverEnabled: Boolean = false,
 ) {
     companion object {
         const val TABLE = "categories"
@@ -134,6 +136,15 @@ data class ExchangeRateEntity(
 /** Result row of [TransactionDao.observeTotalsByCategory]: one line per (category, currency, rate). */
 data class CategoryTotalRow(
     val categoryId: Long,
+    val currencyCode: String,
+    val rateToBase: BigDecimal,
+    val totalMinor: Long,
+)
+
+/** Result row of [TransactionDao.observeAllTotalsByCategoryAndMonth]: backs budget rollover. */
+data class CategoryMonthTotalRow(
+    val categoryId: Long,
+    val month: YearMonth,
     val currencyCode: String,
     val rateToBase: BigDecimal,
     val totalMinor: Long,

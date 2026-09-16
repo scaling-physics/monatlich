@@ -31,7 +31,10 @@ abstract class MonatlichDatabase : RoomDatabase() {
 
     companion object {
         const val NAME = "monatlich.db"
-        /** 1: M2 baseline · 2: M8 recurring transactions ([Migrations.MIGRATION_1_2]). */
-        const val VERSION = 2
+        /**
+         * 1: M2 baseline · 2: M8 recurring transactions ([Migrations.MIGRATION_1_2]) ·
+         * 3: budget rollover ([Migrations.MIGRATION_2_3]).
+         */
+        const val VERSION = 3
     }
 }

@@ -40,4 +40,13 @@ interface TransactionRepository {
         type: TransactionType,
         base: Currency,
     ): Flow<Map<Long, Money>>
+
+    /**
+     * The same per-category conversion as [observeTotalsByCategoryInBase], but every month at
+     * once, keyed by category then month. Backs budget rollover.
+     */
+    fun observeAllTotalsByCategoryAndMonthInBase(
+        type: TransactionType,
+        base: Currency,
+    ): Flow<Map<Long, Map<YearMonth, Money>>>
 }

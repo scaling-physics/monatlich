@@ -47,7 +47,7 @@ Personal tool first; structure kept clean enough for a future Play Store release
 **Later — nice to have**
 - [x] Charts: spend by category (month), month-over-month trend
 - [x] Home-screen widget for quick add
-- [ ] Unspent-budget rollover into next month (per-category opt-in)
+- [x] Unspent-budget rollover into next month (per-category opt-in)
 - [ ] Opt-in live exchange rate fetch
 - [ ] Add more currencies beyond USD / EUR / INR
 - [x] Biometric / PIN app lock
