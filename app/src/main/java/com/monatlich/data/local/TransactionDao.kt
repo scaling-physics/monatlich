@@ -6,6 +6,7 @@ import androidx.room.Query
 import androidx.room.Update
 import com.monatlich.domain.model.TransactionType
 import kotlinx.coroutines.flow.Flow
+import java.time.LocalDate
 import java.time.YearMonth
 
 @Dao
@@ -57,6 +58,22 @@ interface TransactionDao {
             "ORDER BY categoryId, currencyCode, rateToBase",
     )
     fun observeTotalsByCategory(month: YearMonth, type: TransactionType): Flow<List<CategoryTotalRow>>
+
+    /**
+     * The same grouping as [observeTotalsByCategory], but over an arbitrary inclusive date range
+     * instead of a whole month — backs the Overview chart's custom date-range selection.
+     */
+    @Query(
+        "SELECT categoryId, currencyCode, rateToBase, SUM(amountMinor) AS totalMinor " +
+            "FROM transactions WHERE date BETWEEN :start AND :end AND type = :type " +
+            "GROUP BY categoryId, currencyCode, rateToBase " +
+            "ORDER BY categoryId, currencyCode, rateToBase",
+    )
+    fun observeTotalsByCategoryInRange(
+        start: LocalDate,
+        end: LocalDate,
+        type: TransactionType,
+    ): Flow<List<CategoryTotalRow>>
 
     /**
      * The same grouping as [observeTotalsByCategory], but every month at once — backs budget

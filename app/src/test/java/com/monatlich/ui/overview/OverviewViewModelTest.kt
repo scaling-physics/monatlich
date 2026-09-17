@@ -13,6 +13,7 @@ import com.monatlich.domain.usecase.FakeExchangeRateRepository
 import com.monatlich.domain.usecase.FakeSettingsRepository
 import com.monatlich.domain.usecase.FakeTransactionRepository
 import com.monatlich.domain.usecase.GetMonthSummary
+import com.monatlich.domain.usecase.GetSpendingBreakdown
 import com.monatlich.ui.MainDispatcherRule
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -51,6 +52,7 @@ class OverviewViewModelTest {
 
     private fun viewModel() = OverviewViewModel(
         getMonthSummary = GetMonthSummary(categories, budgets, transactions, rates, settings),
+        getSpendingBreakdown = GetSpendingBreakdown(categories, transactions, settings),
         budgets = budgets,
         clock = fixedClock,
     )
@@ -278,6 +280,77 @@ class OverviewViewModelTest {
             repeat(9) { vm.onEvent(OverviewEvent.PreviousMonth) }
             val state = awaitItemMatching { it.month == YearMonth.of(2025, 12) }
             assertFalse(state.isCurrentMonth)
+        }
+    }
+
+    @Test
+    fun `chart defaults to the selected month and follows it on month switch`() = runTest {
+        expense(groceries, LocalDate.of(2026, 9, 3), "120")
+        expense(rent, LocalDate.of(2026, 8, 20), "250")
+
+        val vm = viewModel()
+        vm.uiState.test {
+            val sept = awaitItemMatching { it.chart.hasSpending }
+            assertFalse(sept.chart.isCustomRange)
+            assertEquals(1, sept.chart.slices.size)
+            assertEquals("Groceries", sept.chart.slices.first().name)
+            assertEquals(12_000L, sept.chart.totalSpentMinor)
+
+            vm.onEvent(OverviewEvent.PreviousMonth)
+            val aug = awaitItemMatching { it.month == august && it.chart.hasSpending }
+            assertFalse(aug.chart.isCustomRange)
+            assertEquals("Rent", aug.chart.slices.first().name)
+            assertEquals(25_000L, aug.chart.totalSpentMinor)
+        }
+    }
+
+    @Test
+    fun `chart type toggles between pie and bar`() = runTest {
+        val vm = viewModel()
+        vm.uiState.test {
+            assertEquals(ChartType.PIE, awaitItem().chart.type)
+
+            vm.onEvent(OverviewEvent.ChartTypeSelected(ChartType.BAR))
+            assertEquals(ChartType.BAR, awaitItem().chart.type)
+        }
+    }
+
+    @Test
+    fun `custom range overrides the chart without affecting the budget list, and clearing reverts to the month`() = runTest {
+        expense(groceries, LocalDate.of(2026, 9, 3), "120")
+        expense(rent, LocalDate.of(2026, 8, 20), "250")
+
+        val vm = viewModel()
+        vm.uiState.test {
+            val sept = awaitItemMatching { it.chart.hasSpending }
+            assertEquals(september, sept.month)
+            assertEquals(12_000L, sept.chart.totalSpentMinor)
+
+            vm.onEvent(OverviewEvent.CustomRangeSelected(LocalDate.of(2026, 8, 1), LocalDate.of(2026, 9, 30)))
+            val custom = awaitItemMatching { it.chart.isCustomRange }
+            // Chart now spans both months' spending...
+            assertEquals(37_000L, custom.chart.totalSpentMinor)
+            // ...but the budget list underneath stays on the selected month.
+            assertEquals(september, custom.month)
+            assertEquals(12_000L, custom.totalSpentMinor)
+
+            vm.onEvent(OverviewEvent.CustomRangeCleared)
+            val reverted = awaitItemMatching { !it.chart.isCustomRange }
+            assertEquals(12_000L, reverted.chart.totalSpentMinor)
+        }
+    }
+
+    @Test
+    fun `range picker visibility toggles via requested and dismissed events`() = runTest {
+        val vm = viewModel()
+        vm.uiState.test {
+            assertFalse(awaitItem().chart.isRangePickerVisible)
+
+            vm.onEvent(OverviewEvent.RangePickerRequested)
+            assertTrue(awaitItem().chart.isRangePickerVisible)
+
+            vm.onEvent(OverviewEvent.RangePickerDismissed)
+            assertFalse(awaitItem().chart.isRangePickerVisible)
         }
     }
 

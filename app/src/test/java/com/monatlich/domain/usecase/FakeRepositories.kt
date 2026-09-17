@@ -21,6 +21,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import java.math.BigDecimal
 import java.time.Instant
+import java.time.LocalDate
 import java.time.YearMonth
 
 /** In-memory repositories backed by `MutableStateFlow`, so tests can push changes and observe. */
@@ -112,6 +113,20 @@ class FakeTransactionRepository(initial: List<Transaction> = emptyList()) : Tran
     override fun observeTotalsByCategoryInBase(month: YearMonth, type: TransactionType, base: Currency): Flow<Map<Long, Money>> =
         state.map { list ->
             list.filter { it.month == month && it.type == type }
+                .groupBy { Triple(it.categoryId, it.amount.currency, it.rateToBase) }
+                .map { (key, group) ->
+                    val (categoryId, currency, rate) = key
+                    val sum = Money(group.sumOf { it.amount.amountMinor }, currency)
+                    categoryId to (if (currency == base) sum else sum.convertTo(base, rate))
+                }
+                .groupBy({ it.first }, { it.second })
+                .mapValues { (_, amounts) -> amounts.reduce { a, b -> a + b } }
+        }
+
+    /** Mirrors the real implementation: same grouping as [observeTotalsByCategoryInBase], filtered by date range. */
+    override fun observeTotalsByCategoryInRange(start: LocalDate, end: LocalDate, type: TransactionType, base: Currency): Flow<Map<Long, Money>> =
+        state.map { list ->
+            list.filter { it.date in start..end && it.type == type }
                 .groupBy { Triple(it.categoryId, it.amount.currency, it.rateToBase) }
                 .map { (key, group) ->
                     val (categoryId, currency, rate) = key

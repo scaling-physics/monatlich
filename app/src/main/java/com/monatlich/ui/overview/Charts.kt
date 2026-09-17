@@ -1,4 +1,4 @@
-package com.monatlich.ui.insights
+package com.monatlich.ui.overview
 
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
@@ -25,18 +24,32 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.monatlich.ui.common.LocalMotion
 import com.monatlich.ui.common.categoryTint
 import com.monatlich.ui.common.formatMinor
+import androidx.compose.ui.graphics.Color as ComposeColor
+
+/**
+ * A diagonal light-to-full-tone gradient of a category's own color, used to fill both the donut
+ * wedges and the bar chart so each category still reads as its usual color (matching badges and
+ * rows elsewhere in the app) while giving charts a bit of depth instead of flat fills.
+ */
+@Composable
+fun categoryGradientBrush(argb: Long): Brush {
+    val tint = categoryTint(argb)
+    val light = lerp(tint, ComposeColor.White, 0.35f)
+    return Brush.linearGradient(colors = listOf(light, tint))
+}
 
 /**
  * A ring chart of [slices], each an arc proportional to [CategorySliceUiState.fraction], with the
- * month's total spend centered inside the ring. Arcs animate in on first composition/data change.
+ * range's total spend centered inside the ring. Arcs animate in on first composition/data change.
  */
 @Composable
 fun CategoryDonutChart(
@@ -51,7 +64,7 @@ fun CategoryDonutChart(
         animationSpec = if (motion.reduceMotion) tween(0) else tween(600),
         label = "donutProgress",
     )
-    val colors = slices.map { categoryTint(it.color) }
+    val brushes = slices.map { categoryGradientBrush(it.color) }
 
     Box(modifier = modifier.aspectRatio(1f), contentAlignment = Alignment.Center) {
         Canvas(modifier = Modifier.fillMaxWidth().aspectRatio(1f)) {
@@ -63,7 +76,7 @@ fun CategoryDonutChart(
             slices.forEachIndexed { index, slice ->
                 val sweep = 360f * slice.fraction * progress
                 drawArc(
-                    color = colors[index],
+                    brush = brushes[index],
                     startAngle = startAngle,
                     sweepAngle = sweep,
                     useCenter = false,
@@ -120,60 +133,69 @@ private fun sharePercentLabel(fraction: Float): String {
 }
 
 /**
- * Paired spend/income bars per month. Bar heights are relative to [InsightsUiState.trendMaxMinor]
- * so the chart re-scales as new months enter the window.
+ * One gradient-filled horizontal bar per category, proportional to [CategorySliceUiState.fraction]
+ * of the range's total. Each row carries its own name/amount/share, so unlike the donut this needs
+ * no separate legend.
  */
 @Composable
-fun MonthlyTrendChart(
-    points: List<TrendPointUiState>,
-    maxMinor: Long,
+fun CategoryBarChart(
+    slices: List<CategorySliceUiState>,
+    currencyCode: String,
     modifier: Modifier = Modifier,
 ) {
-    val motion = LocalMotion.current
-    Row(
-        modifier = modifier.fillMaxWidth().height(160.dp),
-        horizontalArrangement = Arrangement.SpaceEvenly,
-    ) {
-        points.forEach { point ->
-            Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.weight(1f)) {
-                Row(
-                    verticalAlignment = Alignment.Bottom,
-                    horizontalArrangement = Arrangement.spacedBy(3.dp),
-                    modifier = Modifier.weight(1f),
-                ) {
-                    TrendBar(
-                        fraction = if (maxMinor <= 0L) 0f else point.spentMinor.toFloat() / maxMinor.toFloat(),
-                        color = MaterialTheme.colorScheme.primary,
-                        reduceMotion = motion.reduceMotion,
-                    )
-                    TrendBar(
-                        fraction = if (maxMinor <= 0L) 0f else point.incomeMinor.toFloat() / maxMinor.toFloat(),
-                        color = MaterialTheme.colorScheme.tertiary,
-                        reduceMotion = motion.reduceMotion,
-                    )
-                }
-                Spacer(Modifier.height(6.dp))
-                Text(
-                    text = point.label,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
+    Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        slices.forEach { slice ->
+            CategoryBarRow(slice = slice, currencyCode = currencyCode)
         }
     }
 }
 
 @Composable
-private fun TrendBar(fraction: Float, color: Color, reduceMotion: Boolean, modifier: Modifier = Modifier) {
-    val animated by animateFloatAsState(
-        targetValue = fraction.coerceIn(0f, 1f),
-        animationSpec = if (reduceMotion) tween(0) else tween(500),
-        label = "trendBar",
+private fun CategoryBarRow(slice: CategorySliceUiState, currencyCode: String, modifier: Modifier = Modifier) {
+    val motion = LocalMotion.current
+    val animatedFraction by animateFloatAsState(
+        targetValue = slice.fraction.coerceIn(0f, 1f),
+        animationSpec = if (motion.reduceMotion) tween(0) else tween(600),
+        label = "categoryBarFraction",
     )
-    Box(
-        modifier = modifier
-            .width(10.dp)
-            .fillMaxHeight(animated.coerceAtLeast(0.015f))
-            .background(color, shape = RoundedCornerShape(topStart = 3.dp, topEnd = 3.dp)),
-    )
+    val brush = categoryGradientBrush(slice.color)
+    Column(modifier = modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            Text(
+                text = slice.name,
+                style = MaterialTheme.typography.bodyLarge,
+                modifier = Modifier.weight(1f),
+            )
+            Text(
+                text = sharePercentLabel(slice.fraction),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(Modifier.width(12.dp))
+            Text(
+                text = formatMinor(slice.spentMinor, currencyCode),
+                style = MaterialTheme.typography.bodyLarge,
+            )
+        }
+        Spacer(Modifier.height(8.dp))
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(10.dp)
+                .background(
+                    color = MaterialTheme.colorScheme.surfaceContainerHighest,
+                    shape = RoundedCornerShape(percent = 50),
+                ),
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth(animatedFraction.coerceAtLeast(0.015f))
+                    .height(10.dp)
+                    .background(brush = brush, shape = RoundedCornerShape(percent = 50)),
+            )
+        }
+    }
 }

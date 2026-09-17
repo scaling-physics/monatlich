@@ -27,7 +27,6 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.outlined.Autorenew
-import androidx.compose.material.icons.outlined.BarChart
 import androidx.compose.material.icons.outlined.Category
 import androidx.compose.material.icons.outlined.CurrencyExchange
 import androidx.compose.material.icons.outlined.ImportExport
@@ -79,7 +78,6 @@ const val RATE_INPUT_TAG = "settings_rate_input"
 const val MANAGE_CATEGORIES_TAG = "settings_manage_categories"
 const val MANAGE_RECURRING_TAG = "settings_manage_recurring"
 const val MANAGE_DATA_TAG = "settings_manage_data"
-const val OPEN_INSIGHTS_TAG = "settings_open_insights"
 const val OPEN_SECURITY_TAG = "settings_open_security"
 
 /** Test tag of the exchange-rate row for [code], e.g. `settings_rate_USD`. */
@@ -94,7 +92,6 @@ fun SettingsRoute(
     onManageCategories: () -> Unit,
     onManageRecurring: () -> Unit,
     onManageData: () -> Unit,
-    onOpenInsights: () -> Unit,
     onOpenSecurity: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: SettingsViewModel = hiltViewModel(),
@@ -106,7 +103,6 @@ fun SettingsRoute(
         onManageCategories = onManageCategories,
         onManageRecurring = onManageRecurring,
         onManageData = onManageData,
-        onOpenInsights = onOpenInsights,
         onOpenSecurity = onOpenSecurity,
         modifier = modifier,
     )
@@ -120,7 +116,6 @@ fun SettingsScreen(
     onManageCategories: () -> Unit,
     onManageRecurring: () -> Unit,
     onManageData: () -> Unit,
-    onOpenInsights: () -> Unit,
     onOpenSecurity: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -182,17 +177,6 @@ fun SettingsScreen(
                     subtitle = "Add, rename, reorder or archive",
                     onClick = onManageCategories,
                     modifier = Modifier.testTag(MANAGE_CATEGORIES_TAG),
-                )
-            }
-
-            item(key = "insights-header") { SectionHeader("Insights") }
-            item(key = "open-insights") {
-                SettingsRow(
-                    icon = { Icon(Icons.Outlined.BarChart, contentDescription = null) },
-                    title = "Spending charts",
-                    subtitle = "Spend by category and month-over-month trend",
-                    onClick = onOpenInsights,
-                    modifier = Modifier.testTag(OPEN_INSIGHTS_TAG),
                 )
             }
 
@@ -488,7 +472,6 @@ private fun SettingsScreenPreview() {
             onManageCategories = {},
             onManageRecurring = {},
             onManageData = {},
-            onOpenInsights = {},
             onOpenSecurity = {},
         )
     }

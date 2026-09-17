@@ -8,6 +8,7 @@ import com.monatlich.domain.model.TransactionType
 import com.monatlich.domain.repository.TransactionRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import java.time.LocalDate
 import java.time.YearMonth
 import javax.inject.Inject
 
@@ -47,6 +48,23 @@ class TransactionRepositoryImpl @Inject constructor(
         base: Currency,
     ): Flow<Map<Long, Money>> =
         dao.observeTotalsByCategory(month, type).map { rows ->
+            val totals = LinkedHashMap<Long, Money>()
+            rows.forEach { row ->
+                val currency = Currency.fromCode(row.currencyCode)
+                val amount = Money(row.totalMinor, currency)
+                val inBase = if (currency == base) amount else amount.convertTo(base, row.rateToBase)
+                totals[row.categoryId] = totals[row.categoryId]?.plus(inBase) ?: inBase
+            }
+            totals
+        }
+
+    override fun observeTotalsByCategoryInRange(
+        start: LocalDate,
+        end: LocalDate,
+        type: TransactionType,
+        base: Currency,
+    ): Flow<Map<Long, Money>> =
+        dao.observeTotalsByCategoryInRange(start, end, type).map { rows ->
             val totals = LinkedHashMap<Long, Money>()
             rows.forEach { row ->
                 val currency = Currency.fromCode(row.currencyCode)

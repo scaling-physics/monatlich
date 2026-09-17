@@ -4,8 +4,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.monatlich.domain.model.Currency
 import com.monatlich.domain.model.MonthSummary
+import com.monatlich.domain.model.SpendingBreakdown
 import com.monatlich.domain.repository.BudgetRepository
 import com.monatlich.domain.usecase.GetMonthSummary
+import com.monatlich.domain.usecase.GetSpendingBreakdown
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -14,10 +16,15 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import java.time.Clock
+import java.time.LocalDate
 import java.time.YearMonth
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 import javax.inject.Inject
 
 /**
@@ -32,12 +39,16 @@ import javax.inject.Inject
 @OptIn(ExperimentalCoroutinesApi::class)
 class OverviewViewModel @Inject internal constructor(
     private val getMonthSummary: GetMonthSummary,
+    private val getSpendingBreakdown: GetSpendingBreakdown,
     private val budgets: BudgetRepository,
     private val clock: Clock,
 ) : ViewModel() {
 
     private val selectedMonth = MutableStateFlow(YearMonth.now(clock))
     private val flags = MutableStateFlow(Flags())
+    private val chartType = MutableStateFlow(ChartType.PIE)
+    /** `null` = chart follows [selectedMonth]; non-null = an explicit range overrides it. */
+    private val customRange = MutableStateFlow<ClosedRange<LocalDate>?>(null)
 
     /**
      * Everything the screen needs for one month, emitted only once that month's data has arrived.
@@ -58,12 +69,34 @@ class OverviewViewModel @Inject internal constructor(
         }
     }
 
-    val uiState: StateFlow<OverviewUiState> = combine(monthData, flags) { data, flags ->
-        buildState(data.month, data.summary, data.canCopyFromPreviousMonth, flags)
+    /**
+     * `null` while the chart follows the selected month; once a custom range is picked, resolves
+     * its [SpendingBreakdown] independently of month navigation — so switching months with a
+     * custom range active never touches this pipeline, and vice versa. Both halves of a range
+     * ([ChartOverride.range] and its data) always come from the same emission, so they can never
+     * show mismatched dates.
+     */
+    private val chartOverride: Flow<ChartOverride> = customRange.flatMapLatest { range ->
+        if (range == null) {
+            flowOf(ChartOverride(range = null, breakdown = null))
+        } else {
+            getSpendingBreakdown(range.start, range.endInclusive).map { ChartOverride(range, it) }
+        }
+    }
+
+    val uiState: StateFlow<OverviewUiState> = combine(monthData, chartOverride, chartType, flags) { data, override, type, flags ->
+        buildState(data.month, data.summary, data.canCopyFromPreviousMonth, flags, type, override)
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS),
-        initialValue = buildState(selectedMonth.value, summary = null, copyable = false, flags = flags.value),
+        initialValue = buildState(
+            month = selectedMonth.value,
+            summary = null,
+            copyable = false,
+            flags = flags.value,
+            type = chartType.value,
+            override = ChartOverride(range = null, breakdown = null),
+        ),
     )
 
     fun onEvent(event: OverviewEvent) {
@@ -78,6 +111,14 @@ class OverviewViewModel @Inject internal constructor(
             OverviewEvent.CopyPromptDismissed -> flags.update {
                 it.copy(dismissedCopyPrompts = it.dismissedCopyPrompts + selectedMonth.value)
             }
+            is OverviewEvent.ChartTypeSelected -> chartType.value = event.type
+            OverviewEvent.RangePickerRequested -> flags.update { it.copy(isRangePickerVisible = true) }
+            OverviewEvent.RangePickerDismissed -> flags.update { it.copy(isRangePickerVisible = false) }
+            is OverviewEvent.CustomRangeSelected -> {
+                customRange.value = event.start..event.end
+                flags.update { it.copy(isRangePickerVisible = false) }
+            }
+            OverviewEvent.CustomRangeCleared -> customRange.value = null
         }
     }
 
@@ -92,6 +133,8 @@ class OverviewViewModel @Inject internal constructor(
         summary: MonthSummary?,
         copyable: Boolean,
         flags: Flags,
+        type: ChartType,
+        override: ChartOverride,
     ): OverviewUiState {
         val categories = summary?.categories.orEmpty().map { row ->
             CategoryRowUiState(
@@ -117,7 +160,74 @@ class OverviewViewModel @Inject internal constructor(
             isAddSheetVisible = flags.isAddSheetVisible,
             selectedCategoryId = flags.selectedCategoryId,
             showCopyPrompt = copyable && month !in flags.dismissedCopyPrompts,
+            chart = buildChartState(month, summary, type, override, flags.isRangePickerVisible),
         )
+    }
+
+    /**
+     * By default (no custom range) the chart reuses [summary]'s own per-category spend — the same
+     * data the budget list below it already has, so a month switch can never leave the chart out
+     * of step with the list. A custom range instead draws from [override], resolved independently.
+     */
+    private fun buildChartState(
+        month: YearMonth,
+        summary: MonthSummary?,
+        type: ChartType,
+        override: ChartOverride,
+        isRangePickerVisible: Boolean,
+    ): CategoryChartUiState {
+        val isCustomRange = override.range != null
+        val isLoading = if (isCustomRange) override.breakdown == null else summary == null
+        val currencyCode = if (isCustomRange) {
+            override.breakdown?.baseCurrency ?: DEFAULT_CURRENCY
+        } else {
+            summary?.baseCurrency ?: DEFAULT_CURRENCY
+        }
+
+        val spendByCategory = (
+            if (isCustomRange) {
+                override.breakdown?.categories.orEmpty().map { it.category to it.spentInBase.amountMinor }
+            } else {
+                summary?.categories.orEmpty()
+                    .filter { it.spentInBase.amountMinor > 0L }
+                    .map { it.category to it.spentInBase.amountMinor }
+            }
+        ).sortedByDescending { it.second }
+
+        val totalMinor = spendByCategory.sumOf { it.second }
+        val slices = spendByCategory.map { (category, spentMinor) ->
+            CategorySliceUiState(
+                categoryId = category.id,
+                name = category.name,
+                color = category.color,
+                spentMinor = spentMinor,
+                fraction = if (totalMinor <= 0L) 0f else spentMinor.toFloat() / totalMinor.toFloat(),
+            )
+        }
+
+        val rangeStart = override.range?.start ?: month.atDay(1)
+        val rangeEnd = override.range?.endInclusive ?: month.atEndOfMonth()
+
+        return CategoryChartUiState(
+            type = type,
+            isLoading = isLoading,
+            isCustomRange = isCustomRange,
+            rangeStart = rangeStart,
+            rangeEnd = rangeEnd,
+            rangeLabel = if (isCustomRange) rangeLabel(rangeStart, rangeEnd) else monthLabel(month),
+            currencyCode = currencyCode.code,
+            totalSpentMinor = totalMinor,
+            slices = slices,
+            isRangePickerVisible = isRangePickerVisible,
+        )
+    }
+
+    private fun monthLabel(month: YearMonth): String =
+        month.format(DateTimeFormatter.ofPattern("LLLL yyyy", Locale.getDefault()))
+
+    private fun rangeLabel(start: LocalDate, end: LocalDate): String {
+        val formatter = DateTimeFormatter.ofPattern("d MMM", Locale.getDefault())
+        return "${start.format(formatter)} – ${end.format(formatter)}"
     }
 
     private data class MonthData(
@@ -126,10 +236,17 @@ class OverviewViewModel @Inject internal constructor(
         val canCopyFromPreviousMonth: Boolean,
     )
 
+    /** `range`/`breakdown` are `null` together (no custom range) or non-null together (resolved). */
+    private data class ChartOverride(
+        val range: ClosedRange<LocalDate>?,
+        val breakdown: SpendingBreakdown?,
+    )
+
     private data class Flags(
         val isAddSheetVisible: Boolean = false,
         val selectedCategoryId: Long? = null,
         val dismissedCopyPrompts: Set<YearMonth> = emptySet(),
+        val isRangePickerVisible: Boolean = false,
     )
 
     private companion object {

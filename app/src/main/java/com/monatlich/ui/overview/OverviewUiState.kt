@@ -1,6 +1,7 @@
 package com.monatlich.ui.overview
 
 import androidx.compose.runtime.Immutable
+import java.time.LocalDate
 import java.time.YearMonth
 
 /**
@@ -25,6 +26,7 @@ data class OverviewUiState(
     val selectedCategoryId: Long? = null,
     /** `true` when this month has no budgets but the previous month has at least one. */
     val showCopyPrompt: Boolean = false,
+    val chart: CategoryChartUiState = CategoryChartUiState(),
 ) {
     val totalRemainingMinor: Long get() = totalBudgetMinor - totalSpentMinor
     val totalProgress: Float get() = progressOf(totalSpentMinor, totalBudgetMinor)
@@ -54,6 +56,40 @@ data class CategoryRowUiState(
     val isOverBudget: Boolean get() = hasBudget && spentMinor > budgetMinor
 }
 
+/** Which chart form the Overview "Spending" card renders — toggled by the user. */
+enum class ChartType { PIE, BAR }
+
+/** One wedge/bar of the "spend by category" chart. */
+@Immutable
+data class CategorySliceUiState(
+    val categoryId: Long,
+    val name: String,
+    val color: Long,
+    val spentMinor: Long,
+    /** Share of the chart's total spend, `0f..1f`. */
+    val fraction: Float,
+)
+
+/**
+ * The Overview "Spending" card: category breakdown over [rangeStart]..[rangeEnd], which follows
+ * the selected month by default ([isCustomRange] `false`) or an explicit range the user picked.
+ */
+@Immutable
+data class CategoryChartUiState(
+    val type: ChartType = ChartType.PIE,
+    val isLoading: Boolean = true,
+    val isCustomRange: Boolean = false,
+    val rangeStart: LocalDate? = null,
+    val rangeEnd: LocalDate? = null,
+    val rangeLabel: String = "",
+    val currencyCode: String = "EUR",
+    val totalSpentMinor: Long = 0L,
+    val slices: List<CategorySliceUiState> = emptyList(),
+    val isRangePickerVisible: Boolean = false,
+) {
+    val hasSpending: Boolean get() = slices.isNotEmpty()
+}
+
 sealed interface OverviewEvent {
     data object PreviousMonth : OverviewEvent
     data object NextMonth : OverviewEvent
@@ -63,6 +99,11 @@ sealed interface OverviewEvent {
     data class CategoryClicked(val categoryId: Long) : OverviewEvent
     data object CategorySheetDismissed : OverviewEvent
     data object CopyPromptDismissed : OverviewEvent
+    data class ChartTypeSelected(val type: ChartType) : OverviewEvent
+    data object RangePickerRequested : OverviewEvent
+    data object RangePickerDismissed : OverviewEvent
+    data class CustomRangeSelected(val start: LocalDate, val end: LocalDate) : OverviewEvent
+    data object CustomRangeCleared : OverviewEvent
 }
 
 private fun progressOf(spent: Long, budget: Long): Float = when {

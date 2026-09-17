@@ -16,6 +16,7 @@ import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.draggable
 import androidx.compose.foundation.gestures.rememberDraggableState
@@ -40,20 +41,33 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.outlined.BarChart
+import androidx.compose.material.icons.outlined.CalendarToday
+import androidx.compose.material.icons.outlined.PieChart
 import androidx.compose.material.icons.outlined.Today
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.DateRangePicker
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.rememberDateRangePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -89,7 +103,10 @@ import com.monatlich.ui.theme.AmountTextStyle
 import com.monatlich.ui.theme.MonatlichTheme
 import com.monatlich.ui.theme.MonatlichThemeTokens
 import kotlinx.coroutines.launch
+import java.time.Instant
+import java.time.LocalDate
 import java.time.YearMonth
+import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 import kotlin.math.abs
@@ -169,6 +186,7 @@ fun OverviewScreen(
             onPrevious = { onEvent(OverviewEvent.PreviousMonth) },
             onNext = { onEvent(OverviewEvent.NextMonth) },
             onCategoryClick = { onEvent(OverviewEvent.CategoryClicked(it)) },
+            onEvent = onEvent,
         )
     }
 
@@ -268,6 +286,7 @@ private fun MonthContent(
     onPrevious: () -> Unit,
     onNext: () -> Unit,
     onCategoryClick: (Long) -> Unit,
+    onEvent: (OverviewEvent) -> Unit,
 ) {
     val motion = LocalMotion.current
     AnimatedContent(
@@ -292,6 +311,13 @@ private fun MonthContent(
         ) {
             item(key = "total") {
                 TotalCard(state = shown, modifier = Modifier.animateItem())
+            }
+            item(key = "chart") {
+                SpendingChartCard(
+                    chart = shown.chart,
+                    onEvent = onEvent,
+                    modifier = Modifier.animateItem(),
+                )
             }
             item(key = "header") {
                 Text(
@@ -477,6 +503,180 @@ private fun NetIncomeRow(state: OverviewUiState, currency: Currency) {
     }
 }
 
+// --- Spending chart ------------------------------------------------------------------------------
+
+@Composable
+private fun SpendingChartCard(
+    chart: CategoryChartUiState,
+    onEvent: (OverviewEvent) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val motion = LocalMotion.current
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        color = MaterialTheme.colorScheme.surfaceContainerLow,
+    ) {
+        Column(modifier = Modifier.padding(20.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(text = "Spending", style = MaterialTheme.typography.titleMedium)
+                ChartTypeToggle(
+                    selected = chart.type,
+                    onSelect = { onEvent(OverviewEvent.ChartTypeSelected(it)) },
+                )
+            }
+            Spacer(Modifier.height(10.dp))
+            FilterChip(
+                selected = chart.isCustomRange,
+                onClick = { onEvent(OverviewEvent.RangePickerRequested) },
+                label = { Text(chart.rangeLabel) },
+                leadingIcon = {
+                    Icon(
+                        Icons.Outlined.CalendarToday,
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp),
+                    )
+                },
+                trailingIcon = if (chart.isCustomRange) {
+                    {
+                        Icon(
+                            Icons.Filled.Close,
+                            contentDescription = "Clear custom range",
+                            modifier = Modifier
+                                .size(16.dp)
+                                .clickable { onEvent(OverviewEvent.CustomRangeCleared) },
+                        )
+                    }
+                } else {
+                    null
+                },
+                colors = FilterChipDefaults.filterChipColors(
+                    selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                ),
+            )
+            Spacer(Modifier.height(16.dp))
+            AnimatedContent(
+                targetState = chart,
+                transitionSpec = { (fadeIn(motion.feedback()) togetherWith fadeOut(motion.feedback())) },
+                label = "spendingChart",
+            ) { shown ->
+                when {
+                    shown.hasSpending -> ChartBody(shown)
+                    !shown.isLoading -> ChartEmptyState()
+                    else -> Spacer(Modifier.height(180.dp))
+                }
+            }
+        }
+    }
+
+    if (chart.isRangePickerVisible) {
+        RangePickerDialog(
+            initialStart = chart.rangeStart,
+            initialEnd = chart.rangeEnd,
+            onDismiss = { onEvent(OverviewEvent.RangePickerDismissed) },
+            onConfirm = { start, end -> onEvent(OverviewEvent.CustomRangeSelected(start, end)) },
+        )
+    }
+}
+
+@Composable
+private fun ChartBody(chart: CategoryChartUiState) {
+    when (chart.type) {
+        ChartType.PIE -> Column {
+            CategoryDonutChart(
+                slices = chart.slices,
+                totalMinor = chart.totalSpentMinor,
+                currencyCode = chart.currencyCode,
+                modifier = Modifier.size(180.dp).align(Alignment.CenterHorizontally),
+            )
+            Spacer(Modifier.height(20.dp))
+            chart.slices.forEachIndexed { index, slice ->
+                if (index > 0) Spacer(Modifier.height(12.dp))
+                CategoryLegendRow(slice = slice, currencyCode = chart.currencyCode)
+            }
+        }
+        ChartType.BAR -> CategoryBarChart(slices = chart.slices, currencyCode = chart.currencyCode)
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ChartTypeToggle(selected: ChartType, onSelect: (ChartType) -> Unit) {
+    val options = listOf(
+        ChartType.PIE to Icons.Outlined.PieChart,
+        ChartType.BAR to Icons.Outlined.BarChart,
+    )
+    SingleChoiceSegmentedButtonRow {
+        options.forEachIndexed { index, (type, icon) ->
+            SegmentedButton(
+                selected = type == selected,
+                onClick = { onSelect(type) },
+                shape = SegmentedButtonDefaults.itemShape(index = index, count = options.size),
+                icon = {},
+                label = { Icon(icon, contentDescription = if (type == ChartType.PIE) "Pie chart" else "Bar chart") },
+            )
+        }
+    }
+}
+
+@Composable
+private fun ChartEmptyState(modifier: Modifier = Modifier) {
+    Column(
+        modifier = modifier.fillMaxWidth().padding(vertical = 24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Icon(
+            imageVector = Icons.Outlined.BarChart,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(32.dp),
+        )
+        Spacer(Modifier.height(8.dp))
+        Text(
+            "No spending logged for this period yet",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun RangePickerDialog(
+    initialStart: LocalDate?,
+    initialEnd: LocalDate?,
+    onDismiss: () -> Unit,
+    onConfirm: (start: LocalDate, end: LocalDate) -> Unit,
+) {
+    val state = rememberDateRangePickerState(
+        initialSelectedStartDateMillis = initialStart?.toEpochMillis(),
+        initialSelectedEndDateMillis = initialEnd?.toEpochMillis(),
+    )
+    DatePickerDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    val start = state.selectedStartDateMillis?.toLocalDate()
+                    val end = state.selectedEndDateMillis?.toLocalDate()
+                    if (start != null && end != null) onConfirm(start, end)
+                },
+                enabled = state.selectedStartDateMillis != null && state.selectedEndDateMillis != null,
+            ) { Text("Apply") }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+    ) {
+        DateRangePicker(state = state, modifier = Modifier.weight(1f))
+    }
+}
+
+private fun LocalDate.toEpochMillis(): Long = atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()
+private fun Long.toLocalDate(): LocalDate = Instant.ofEpochMilli(this).atZone(ZoneOffset.UTC).toLocalDate()
+
 @Composable
 private fun CategoryRow(
     row: CategoryRowUiState,
@@ -608,6 +808,17 @@ private fun OverviewScreenPreview() {
                     CategoryRowUiState(2, "Rent", "Home", 0xFF6B1F2A, 120_000, 120_000, hasBudget = true),
                     CategoryRowUiState(3, "Transport", "DirectionsBus", 0xFF1565C0, 10_400, 9_000, hasBudget = true),
                     CategoryRowUiState(4, "Fun", "Celebration", 0xFF7B1FA2, 0, 0, hasBudget = false),
+                ),
+                chart = CategoryChartUiState(
+                    isLoading = false,
+                    rangeLabel = "September 2026",
+                    currencyCode = "EUR",
+                    totalSpentMinor = 132_500,
+                    slices = listOf(
+                        CategorySliceUiState(2, "Rent", 0xFF6B1F2A, 120_000, 0.906f),
+                        CategorySliceUiState(1, "Groceries", 0xFF2E7D32, 31_250, 0.236f),
+                        CategorySliceUiState(3, "Transport", 0xFF1565C0, 10_400, 0.078f),
+                    ),
                 ),
             ),
             onEvent = {},

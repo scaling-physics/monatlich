@@ -65,6 +65,18 @@ private class FakeTransactionDao : TransactionDao {
                 .sortedWith(compareBy({ it.categoryId }, { it.currencyCode }, { it.rateToBase }))
         }
 
+    override fun observeTotalsByCategoryInRange(
+        start: LocalDate,
+        end: LocalDate,
+        type: TransactionType,
+    ): Flow<List<CategoryTotalRow>> =
+        rows.map { list ->
+            list.filter { it.date in start..end && it.type == type }
+                .groupBy { Triple(it.categoryId, it.currencyCode, it.rateToBase) }
+                .map { (key, group) -> CategoryTotalRow(key.first, key.second, key.third, group.sumOf { it.amountMinor }) }
+                .sortedWith(compareBy({ it.categoryId }, { it.currencyCode }, { it.rateToBase }))
+        }
+
     private data class MonthGroupKey(val categoryId: Long, val month: YearMonth, val currencyCode: String, val rateToBase: BigDecimal)
 
     override fun observeAllTotalsByCategoryAndMonth(type: TransactionType): Flow<List<CategoryMonthTotalRow>> =
@@ -205,5 +217,25 @@ class TransactionRepositoryImplTest {
     @Test
     fun `totals are empty for a month without transactions`() = runTest {
         assertEquals(emptyMap<Long, Money>(), repo.observeTotalsByCategoryInBase(september, TransactionType.EXPENSE, EUR).first())
+    }
+
+    @Test
+    fun `range totals span across months and exclude dates outside the range`() = runTest {
+        repo.add(expense(1, "2026-08-28", Money(5000, EUR))) // just inside a range crossing months
+        repo.add(expense(1, "2026-09-02", Money(3000, EUR)))
+        repo.add(expense(2, "2026-09-20", Money(10000, USD), rate = "0.90"))
+        repo.add(expense(1, "2026-09-15", Money(9900, EUR)).copy(type = TransactionType.INCOME)) // wrong type
+        repo.add(expense(3, "2026-07-31", Money(10000, EUR))) // just before the range
+
+        val spent = repo.observeTotalsByCategoryInRange(
+            LocalDate.parse("2026-08-01"),
+            LocalDate.parse("2026-09-30"),
+            TransactionType.EXPENSE,
+            EUR,
+        ).first()
+
+        assertEquals(Money(8000, EUR), spent[1L])
+        assertEquals(Money(9000, EUR), spent[2L])
+        assertEquals(setOf(1L, 2L), spent.keys)
     }
 }

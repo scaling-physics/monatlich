@@ -5,6 +5,7 @@ import com.monatlich.domain.model.Money
 import com.monatlich.domain.model.Transaction
 import com.monatlich.domain.model.TransactionType
 import kotlinx.coroutines.flow.Flow
+import java.time.LocalDate
 import java.time.YearMonth
 
 interface TransactionRepository {
@@ -37,6 +38,18 @@ interface TransactionRepository {
      */
     fun observeTotalsByCategoryInBase(
         month: YearMonth,
+        type: TransactionType,
+        base: Currency,
+    ): Flow<Map<Long, Money>>
+
+    /**
+     * Per-category totals of all [type] transactions between [start] and [end] (inclusive),
+     * converted to [base] the same way as [observeTotalsByCategoryInBase]. Backs the Overview
+     * chart's custom date-range selection.
+     */
+    fun observeTotalsByCategoryInRange(
+        start: LocalDate,
+        end: LocalDate,
         type: TransactionType,
         base: Currency,
     ): Flow<Map<Long, Money>>

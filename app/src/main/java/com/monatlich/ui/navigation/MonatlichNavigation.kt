@@ -48,7 +48,6 @@ import com.monatlich.ui.common.rememberMotion
 import com.monatlich.ui.budget.CopyBudgetsPrompt
 import com.monatlich.ui.budget.SetBudgetSheet
 import com.monatlich.ui.data.DataRoute
-import com.monatlich.ui.insights.InsightsRoute
 import com.monatlich.ui.overview.OverviewRoute
 import com.monatlich.ui.security.SecuritySettingsRoute
 import com.monatlich.ui.recurring.RecurringRoute
@@ -66,9 +65,6 @@ const val RECURRING_ROUTE = "recurring"
 
 /** Non-top-level drill-down from Settings: CSV export and backup / restore. Reach via [navigateToData]. */
 const val DATA_ROUTE = "data"
-
-/** Non-top-level drill-down from Settings: spend-by-category and month-over-month charts. Reach via [navigateToInsights]. */
-const val INSIGHTS_ROUTE = "insights"
 
 /** Non-top-level drill-down from Settings: PIN / biometric app lock. Reach via [navigateToSecurity]. */
 const val SECURITY_ROUTE = "security"
@@ -212,7 +208,6 @@ private fun MonatlichNavHost(
                 onManageCategories = { navController.navigateToCategories() },
                 onManageRecurring = { navController.navigateToRecurring() },
                 onManageData = { navController.navigateToData() },
-                onOpenInsights = { navController.navigateToInsights() },
                 onOpenSecurity = { navController.navigateToSecurity() },
             )
         }
@@ -242,15 +237,6 @@ private fun MonatlichNavHost(
             popExitTransition = { sharedAxisVerticalExit(motion) },
         ) {
             DataRoute(onBack = { navController.popBackStack() })
-        }
-        composable(
-            route = INSIGHTS_ROUTE,
-            enterTransition = { sharedAxisVerticalEnter(motion) },
-            exitTransition = { fadeThroughExit(motion) },
-            popEnterTransition = { fadeThroughEnter(motion) },
-            popExitTransition = { sharedAxisVerticalExit(motion) },
-        ) {
-            InsightsRoute(onBack = { navController.popBackStack() })
         }
         composable(
             route = SECURITY_ROUTE,
@@ -311,11 +297,6 @@ fun NavHostController.navigateToRecurring() {
 /** Pushes the "Manage data" screen (CSV export, backup / restore) on top of the current tab. */
 fun NavHostController.navigateToData() {
     navigate(DATA_ROUTE) { launchSingleTop = true }
-}
-
-/** Pushes the "Insights" charts screen on top of the current tab. */
-fun NavHostController.navigateToInsights() {
-    navigate(INSIGHTS_ROUTE) { launchSingleTop = true }
 }
 
 /** Pushes the "App lock" security settings screen on top of the current tab. */
