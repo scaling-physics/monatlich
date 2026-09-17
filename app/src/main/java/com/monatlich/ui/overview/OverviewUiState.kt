@@ -59,12 +59,16 @@ data class CategoryRowUiState(
 /** Which chart form the Overview "Spending" card renders — toggled by the user. */
 enum class ChartType { PIE, BAR }
 
-/** One wedge/bar of the "spend by category" chart. */
+/**
+ * One wedge/bar of the "spend by category" chart. Its display color is not stored here — it's
+ * resolved from [categoryId] against the chart's own fixed palette (see
+ * [com.monatlich.ui.theme.MonatlichThemeTokens.chartPalette]), independent of the category's own
+ * custom color used for badges/rows elsewhere.
+ */
 @Immutable
 data class CategorySliceUiState(
     val categoryId: Long,
     val name: String,
-    val color: Long,
     val spentMinor: Long,
     /** Share of the chart's total spend, `0f..1f`. */
     val fraction: Float,

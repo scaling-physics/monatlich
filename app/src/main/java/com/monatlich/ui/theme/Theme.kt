@@ -117,4 +117,10 @@ fun MonatlichTheme(
 object MonatlichThemeTokens {
     val budgetColors: BudgetColors
         @Composable get() = LocalBudgetColors.current
+
+    /**
+     * Fixed ring order for the Overview "Spending" chart — see [ChartOchre] for why this order
+     * matters. Same in light and dark, so no theme branching needed.
+     */
+    val chartPalette: List<Color> = listOf(ChartOchre, ChartSage, ChartSand, ChartTeal)
 }

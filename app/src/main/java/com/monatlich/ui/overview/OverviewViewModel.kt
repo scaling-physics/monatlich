@@ -199,7 +199,6 @@ class OverviewViewModel @Inject internal constructor(
             CategorySliceUiState(
                 categoryId = category.id,
                 name = category.name,
-                color = category.color,
                 spentMinor = spentMinor,
                 fraction = if (totalMinor <= 0L) 0f else spentMinor.toFloat() / totalMinor.toFloat(),
             )

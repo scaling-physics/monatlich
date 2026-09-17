@@ -71,8 +71,10 @@ import androidx.compose.material3.rememberDateRangePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -512,6 +514,9 @@ private fun SpendingChartCard(
     modifier: Modifier = Modifier,
 ) {
     val motion = LocalMotion.current
+    // Keyed by rangeLabel so a month/range switch clears a stale selection, but toggling between
+    // pie and bar (which doesn't change the label) keeps it — selecting stays in sync either way.
+    var selectedCategoryId by remember(chart.rangeLabel) { mutableStateOf<Long?>(null) }
     Surface(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
@@ -565,7 +570,11 @@ private fun SpendingChartCard(
                 label = "spendingChart",
             ) { shown ->
                 when {
-                    shown.hasSpending -> ChartBody(shown)
+                    shown.hasSpending -> ChartBody(
+                        chart = shown,
+                        selectedCategoryId = selectedCategoryId,
+                        onSelect = { selectedCategoryId = it },
+                    )
                     !shown.isLoading -> ChartEmptyState()
                     else -> Spacer(Modifier.height(180.dp))
                 }
@@ -584,22 +593,37 @@ private fun SpendingChartCard(
 }
 
 @Composable
-private fun ChartBody(chart: CategoryChartUiState) {
+private fun ChartBody(
+    chart: CategoryChartUiState,
+    selectedCategoryId: Long?,
+    onSelect: (Long?) -> Unit,
+) {
     when (chart.type) {
         ChartType.PIE -> Column {
             CategoryDonutChart(
                 slices = chart.slices,
                 totalMinor = chart.totalSpentMinor,
                 currencyCode = chart.currencyCode,
+                selectedCategoryId = selectedCategoryId,
+                onSelect = onSelect,
                 modifier = Modifier.size(180.dp).align(Alignment.CenterHorizontally),
             )
-            Spacer(Modifier.height(20.dp))
-            chart.slices.forEachIndexed { index, slice ->
-                if (index > 0) Spacer(Modifier.height(12.dp))
-                CategoryLegendRow(slice = slice, currencyCode = chart.currencyCode)
+            Spacer(Modifier.height(16.dp))
+            chart.slices.forEach { slice ->
+                CategoryLegendRow(
+                    slice = slice,
+                    currencyCode = chart.currencyCode,
+                    selected = slice.categoryId == selectedCategoryId,
+                    onClick = { onSelect(if (selectedCategoryId == slice.categoryId) null else slice.categoryId) },
+                )
             }
         }
-        ChartType.BAR -> CategoryBarChart(slices = chart.slices, currencyCode = chart.currencyCode)
+        ChartType.BAR -> CategoryBarChart(
+            slices = chart.slices,
+            currencyCode = chart.currencyCode,
+            selectedCategoryId = selectedCategoryId,
+            onSelect = onSelect,
+        )
     }
 }
 
@@ -815,9 +839,9 @@ private fun OverviewScreenPreview() {
                     currencyCode = "EUR",
                     totalSpentMinor = 132_500,
                     slices = listOf(
-                        CategorySliceUiState(2, "Rent", 0xFF6B1F2A, 120_000, 0.906f),
-                        CategorySliceUiState(1, "Groceries", 0xFF2E7D32, 31_250, 0.236f),
-                        CategorySliceUiState(3, "Transport", 0xFF1565C0, 10_400, 0.078f),
+                        CategorySliceUiState(2, "Rent", 120_000, 0.906f),
+                        CategorySliceUiState(1, "Groceries", 31_250, 0.236f),
+                        CategorySliceUiState(3, "Transport", 10_400, 0.078f),
                     ),
                 ),
             ),

@@ -35,6 +35,7 @@ import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.outlined.Autorenew
 import androidx.compose.material.icons.outlined.Today
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -90,6 +91,7 @@ const val TRANSACTIONS_FAB_TAG = "transactions_fab"
 const val TRANSACTIONS_SEARCH_TAG = "transactions_search"
 const val TRANSACTIONS_MONTH_LABEL_TAG = "transactions_month_label"
 const val TRANSACTIONS_EMPTY_TAG = "transactions_empty"
+const val TRANSACTIONS_OPEN_RECURRING_TAG = "transactions_open_recurring"
 
 /** Test tag of the row for the transaction with [id]. */
 fun transactionRowTag(id: Long): String = "transaction_row_$id"
@@ -100,11 +102,12 @@ fun transactionFilterChipTag(id: Long?): String = "transaction_filter_${id ?: "a
 /** Hilt entry point for the Transactions destination. */
 @Composable
 fun TransactionsRoute(
+    onOpenRecurring: () -> Unit = {},
     modifier: Modifier = Modifier,
     viewModel: TransactionsViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
-    TransactionsScreen(state = state, onEvent = viewModel::onEvent, modifier = modifier)
+    TransactionsScreen(state = state, onEvent = viewModel::onEvent, onOpenRecurring = onOpenRecurring, modifier = modifier)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -112,6 +115,7 @@ fun TransactionsRoute(
 fun TransactionsScreen(
     state: TransactionsUiState,
     onEvent: (TransactionsEvent) -> Unit,
+    onOpenRecurring: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
@@ -141,13 +145,23 @@ fun TransactionsScreen(
             )
         },
         floatingActionButton = {
-            FloatingActionButton(
-                onClick = { onEvent(TransactionsEvent.AddClicked) },
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary,
-                modifier = Modifier.testTag(TRANSACTIONS_FAB_TAG),
-            ) {
-                Icon(Icons.Filled.Add, contentDescription = "Add transaction")
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                FloatingActionButton(
+                    onClick = onOpenRecurring,
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                    modifier = Modifier.testTag(TRANSACTIONS_OPEN_RECURRING_TAG),
+                ) {
+                    Icon(Icons.Outlined.Autorenew, contentDescription = "Recurring transactions")
+                }
+                FloatingActionButton(
+                    onClick = { onEvent(TransactionsEvent.AddClicked) },
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                    modifier = Modifier.testTag(TRANSACTIONS_FAB_TAG),
+                ) {
+                    Icon(Icons.Filled.Add, contentDescription = "Add transaction")
+                }
             }
         },
     ) { innerPadding ->

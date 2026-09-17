@@ -81,3 +81,16 @@ val BudgetOnTrackLight = Color(0xFF3B6E3F)
 val BudgetOnTrackDark = Color(0xFF9BD59B)
 val BudgetWarningLight = Color(0xFF8A6100)
 val BudgetWarningDark = Color(0xFFF2C24D)
+
+// Chart categorical palette (Overview "Spending" card): a soft, earthy quartet independent of
+// each category's own custom color (used for badges/rows elsewhere). Computed, not eyeballed —
+// assigned in this fixed ring order (ochre -> sage -> sand -> teal -> wraps to ochre) so that
+// only ring-adjacent slots, the ones that actually sit next to each other in a donut or bar list,
+// have to clear the dataviz skill's CVD/normal-vision separation gates; the two diagonal pairs
+// (ochre/sand, sage/teal — the closest-in-spirit hues) are exempt from that gate by construction,
+// though still checked to a softer floor. Same four hexes pass contrast against both the light and
+// dark `surfaceContainerLow` card background, so no separate dark variant is needed.
+val ChartOchre = Color(0xFFC87A00)
+val ChartSage = Color(0xFF487738)
+val ChartSand = Color(0xFFC77A65)
+val ChartTeal = Color(0xFF008E9C)

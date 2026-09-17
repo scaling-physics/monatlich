@@ -202,7 +202,9 @@ private fun MonatlichNavHost(
                 onAutoOpenHandled = onQuickAddHandled,
             )
         }
-        composable(TopLevelDestination.Transactions.route) { TransactionsRoute() }
+        composable(TopLevelDestination.Transactions.route) {
+            TransactionsRoute(onOpenRecurring = { navController.navigateToRecurring() })
+        }
         composable(TopLevelDestination.Settings.route) {
             SettingsRoute(
                 onManageCategories = { navController.navigateToCategories() },
