@@ -3,49 +3,49 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <!-- Brand mark, light theme: round cat face with a coin pendant. -->
+    <!-- Brand mark, light theme: round, chubby-cheeked cat face with a coin pendant. -->
 
     <!-- Ears. -->
-    <path android:fillColor="#D9A441" android:pathData="M40,34 L36,15 L52,28 Z" />
-    <path android:fillColor="#D9A441" android:pathData="M56,28 L72,15 L68,34 Z" />
+    <path android:fillColor="#D9A441" android:pathData="M38,35 Q32,21 35,17 Q45,22 51,30 Q45,35 38,35 Z" />
+    <path android:fillColor="#D9A441" android:pathData="M70,35 Q76,21 73,17 Q63,22 57,30 Q63,35 70,35 Z" />
 
     <!-- Head. -->
-    <path android:fillColor="#6B1F2A" android:pathData="M33,46 A21,21 0 1,0 75,46 A21,21 0 1,0 33,46 Z" />
+    <path android:fillColor="#6B1F2A" android:pathData="M32,47 A22,20 0 1,0 76,47 A22,20 0 1,0 32,47 Z" />
 
     <!-- Eyes. -->
-    <path android:fillColor="#FFF3EE" android:pathData="M36,44 A7,7 0 1,0 50,44 A7,7 0 1,0 36,44 Z" />
-    <path android:fillColor="#FFF3EE" android:pathData="M58,44 A7,7 0 1,0 72,44 A7,7 0 1,0 58,44 Z" />
+    <path android:fillColor="#FFF3EE" android:pathData="M33.5,46 A8,8 0 1,0 49.5,46 A8,8 0 1,0 33.5,46 Z" />
+    <path android:fillColor="#FFF3EE" android:pathData="M58.5,46 A8,8 0 1,0 74.5,46 A8,8 0 1,0 58.5,46 Z" />
 
     <!-- Pupils. -->
-    <path android:fillColor="#3D1119" android:pathData="M41.5,46 A3.5,3.5 0 1,0 48.5,46 A3.5,3.5 0 1,0 41.5,46 Z" />
-    <path android:fillColor="#3D1119" android:pathData="M59.5,46 A3.5,3.5 0 1,0 66.5,46 A3.5,3.5 0 1,0 59.5,46 Z" />
+    <path android:fillColor="#3D1119" android:pathData="M38,48 A4.5,4.5 0 1,0 47,48 A4.5,4.5 0 1,0 38,48 Z" />
+    <path android:fillColor="#3D1119" android:pathData="M61,48 A4.5,4.5 0 1,0 70,48 A4.5,4.5 0 1,0 61,48 Z" />
 
     <!-- Eye highlights. -->
-    <path android:fillColor="#FFF3EE" android:pathData="M42.9,43.6 A0.9,0.9 0 1,0 44.7,43.6 A0.9,0.9 0 1,0 42.9,43.6 Z" />
-    <path android:fillColor="#FFF3EE" android:pathData="M60.9,43.6 A0.9,0.9 0 1,0 62.7,43.6 A0.9,0.9 0 1,0 60.9,43.6 Z" />
+    <path android:fillColor="#FFF3EE" android:pathData="M38.5,44.5 A1.5,1.5 0 1,0 41.5,44.5 A1.5,1.5 0 1,0 38.5,44.5 Z" />
+    <path android:fillColor="#FFF3EE" android:pathData="M66.5,44.5 A1.5,1.5 0 1,0 69.5,44.5 A1.5,1.5 0 1,0 66.5,44.5 Z" />
 
     <!-- Blush. -->
-    <path android:fillColor="#C4986A" android:pathData="M33,54 A3,3 0 1,0 39,54 A3,3 0 1,0 33,54 Z" />
-    <path android:fillColor="#C4986A" android:pathData="M69,54 A3,3 0 1,0 75,54 A3,3 0 1,0 69,54 Z" />
+    <path android:fillColor="#C4986A" android:pathData="M30,57 A4,4 0 1,0 38,57 A4,4 0 1,0 30,57 Z" />
+    <path android:fillColor="#C4986A" android:pathData="M70,57 A4,4 0 1,0 78,57 A4,4 0 1,0 70,57 Z" />
 
     <!-- Nose. -->
-    <path android:fillColor="#D9A441" android:pathData="M51,50 L57,50 L54,54 Z" />
+    <path android:fillColor="#D9A441" android:pathData="M51,54 L57,54 L54,57.5 Z" />
 
     <!-- Mouth. -->
     <path
-        android:pathData="M54,54 Q51,57 47,55"
+        android:pathData="M54,57.5 Q54,60 51,59.5 Q49,59 48,57"
         android:strokeColor="#FFF3EE"
         android:strokeWidth="1.6"
         android:strokeLineCap="round" />
     <path
-        android:pathData="M54,54 Q57,57 61,55"
+        android:pathData="M54,57.5 Q54,60 57,59.5 Q59,59 60,57"
         android:strokeColor="#FFF3EE"
         android:strokeWidth="1.6"
         android:strokeLineCap="round" />
 
     <!-- Necklace. -->
     <path
-        android:pathData="M37,65 Q54,72 71,65"
+        android:pathData="M36,64 Q54,71 72,64"
         android:strokeColor="#D9A441"
         android:strokeWidth="2"
         android:strokeLineCap="round" />
